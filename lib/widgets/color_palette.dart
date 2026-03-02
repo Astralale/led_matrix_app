@@ -41,24 +41,25 @@ class HorizontalColorPalette extends StatelessWidget {
 
           return GestureDetector(
             onTap: () => onColorSelected(colorIndex),
-            child: Container(
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 150),
               width: itemSize,
               height: itemSize,
               margin: const EdgeInsets.only(right: 8),
               decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(6),
                 color: AppConstants.colorPalette[colorIndex],
-                borderRadius: BorderRadius.circular(8),
                 border: Border.all(
-                  color: isSelected ? Colors.white : Colors.grey.shade700,
-                  width: isSelected ? 2 : 1,
+                  color: isSelected ? Colors.white : Colors.transparent,
+                  width: 2.5,
                 ),
                 boxShadow: isSelected && colorIndex != 0
                     ? [
                         BoxShadow(
                           color: AppConstants.colorPalette[colorIndex]
-                              .withOpacity(0.5),
-                          blurRadius: 6,
-                          spreadRadius: 1,
+                              .withOpacity(0.7),
+                          blurRadius: 10,
+                          spreadRadius: 2,
                         ),
                       ]
                     : null,

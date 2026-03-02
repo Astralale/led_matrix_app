@@ -51,7 +51,6 @@ class _DrawModeScreenState extends State<DrawModeScreen> {
         child: Row(
           children: [
             _buildControlPanel(),
-
             Expanded(child: _buildDrawingArea()),
           ],
         ),
@@ -62,72 +61,143 @@ class _DrawModeScreenState extends State<DrawModeScreen> {
   Widget _buildControlPanel() {
     return Container(
       width: 90,
-      padding: const EdgeInsets.all(6),
-      decoration: const BoxDecoration(
+      decoration: BoxDecoration(
         color: AppConstants.surfaceColor,
         border: Border(
-          right: BorderSide(color: AppConstants.borderColor, width: 2),
+          right: BorderSide(
+            color: AppConstants.accentColor.withOpacity(0.25),
+            width: 1.5,
+          ),
         ),
+        boxShadow: [
+          BoxShadow(
+            color: AppConstants.accentColor.withOpacity(0.06),
+            blurRadius: 16,
+            offset: const Offset(4, 0),
+          ),
+        ],
       ),
       child: Column(
         children: [
-          _buildSaveButton(),
-
-          const SizedBox(height: 8),
-          const Divider(color: AppConstants.borderColor, height: 1),
-          const SizedBox(height: 8),
-
-          _buildModeButton(
-            icon: Icons.brush,
-            label: 'Draw',
-            isSelected: _isDrawMode,
-            onTap: () => setState(() => _isDrawMode = true),
-          ),
-          const SizedBox(height: 4),
-          _buildModeButton(
-            icon: Icons.auto_fix_high,
-            label: 'Erase',
-            isSelected: !_isDrawMode,
-            onTap: () => setState(() => _isDrawMode = false),
-          ),
-
-          const SizedBox(height: 8),
-          const Divider(color: AppConstants.borderColor, height: 1),
-          const SizedBox(height: 4),
-
-          Expanded(
-            child: GridColorPalette(
-              selectedColorIndex: _selectedColorIndex,
-              onColorSelected: (index) {
-                setState(() {
-                  _selectedColorIndex = index;
-                  if (index != 0) _isDrawMode = true;
-                });
-              },
-              useExtendedPalette: true,
+          // Header
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.symmetric(vertical: 10),
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: [
+                  AppConstants.accentColor.withOpacity(0.18),
+                  AppConstants.secondaryAccent.withOpacity(0.10),
+                ],
+              ),
+              border: Border(
+                bottom: BorderSide(
+                  color: AppConstants.accentColor.withOpacity(0.3),
+                ),
+              ),
+            ),
+            child: const Text(
+              'DESSIN',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                color: AppConstants.accentColor,
+                fontSize: 9,
+                fontWeight: FontWeight.bold,
+                letterSpacing: 2.5,
+              ),
             ),
           ),
 
-          const Divider(color: AppConstants.borderColor, height: 1),
-          const SizedBox(height: 4),
-
-          _buildClearButton(),
+          Expanded(
+            child: Padding(
+              padding: const EdgeInsets.all(6),
+              child: Column(
+                children: [
+                  const SizedBox(height: 4),
+                  _buildSaveButton(),
+                  const SizedBox(height: 8),
+                  _buildDivider(),
+                  const SizedBox(height: 8),
+                  _buildModeButton(
+                    icon: Icons.auto_fix_high,
+                    label: 'Gomme',
+                    isSelected: !_isDrawMode,
+                    onTap: () => setState(() => _isDrawMode = !_isDrawMode),
+                  ),
+                  const SizedBox(height: 8),
+                  _buildDivider(),
+                  const SizedBox(height: 4),
+                  Expanded(
+                    child: GridColorPalette(
+                      selectedColorIndex: _selectedColorIndex,
+                      onColorSelected: (index) {
+                        setState(() {
+                          _selectedColorIndex = index;
+                          if (index != 0) _isDrawMode = true;
+                        });
+                      },
+                      useExtendedPalette: true,
+                    ),
+                  ),
+                  _buildDivider(),
+                  const SizedBox(height: 4),
+                  _buildClearButton(),
+                ],
+              ),
+            ),
+          ),
         ],
       ),
     );
   }
 
+  Widget _buildDivider() {
+    return Container(
+      height: 1,
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [
+            Colors.transparent,
+            AppConstants.borderColor,
+            Colors.transparent,
+          ],
+        ),
+      ),
+    );
+  }
+
   Widget _buildSaveButton() {
-    return SizedBox(
+    return Container(
       width: double.infinity,
+      height: 36,
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(
+          colors: [AppConstants.accentColor, AppConstants.secondaryAccent],
+        ),
+        borderRadius: BorderRadius.circular(AppConstants.smallRadius),
+        boxShadow: [
+          BoxShadow(
+            color: AppConstants.accentColor.withOpacity(0.45),
+            blurRadius: 10,
+            offset: const Offset(0, 3),
+          ),
+        ],
+      ),
       child: ElevatedButton.icon(
         onPressed: _saveAndGoBack,
-        icon: const Icon(Icons.check, size: 16),
-        label: const Text('OK', style: TextStyle(fontSize: 12)),
+        icon: const Icon(Icons.check, size: 14),
+        label: const Text(
+          'OK',
+          style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
+        ),
         style: ElevatedButton.styleFrom(
-          backgroundColor: AppConstants.accentColor,
+          backgroundColor: Colors.transparent,
+          shadowColor: Colors.transparent,
           foregroundColor: Colors.black,
-          padding: const EdgeInsets.symmetric(vertical: 8),
+          padding: EdgeInsets.zero,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(AppConstants.smallRadius),
+          ),
         ),
       ),
     );
@@ -139,37 +209,65 @@ class _DrawModeScreenState extends State<DrawModeScreen> {
     required bool isSelected,
     required VoidCallback onTap,
   }) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 4),
+    if (isSelected) {
+      return Container(
+        width: double.infinity,
+        height: 34,
         decoration: BoxDecoration(
-          color: isSelected ? AppConstants.accentColor : Colors.transparent,
-          borderRadius: BorderRadius.circular(AppConstants.smallRadius),
-          border: Border.all(
-            color: isSelected
-                ? AppConstants.accentColor
-                : AppConstants.borderColor,
+          gradient: const LinearGradient(
+            colors: [AppConstants.accentColor, AppConstants.secondaryAccent],
           ),
-        ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              icon,
-              size: 14,
-              color: isSelected ? Colors.black : Colors.white70,
-            ),
-            const SizedBox(width: 4),
-            Text(
-              label,
-              style: TextStyle(
-                fontSize: 10,
-                fontWeight: FontWeight.w600,
-                color: isSelected ? Colors.black : Colors.white70,
-              ),
+          borderRadius: BorderRadius.circular(AppConstants.smallRadius),
+          boxShadow: [
+            BoxShadow(
+              color: AppConstants.accentColor.withOpacity(0.35),
+              blurRadius: 8,
+              offset: const Offset(0, 3),
             ),
           ],
+        ),
+        child: ElevatedButton.icon(
+          onPressed: onTap,
+          icon: Icon(icon, size: 13),
+          label: Flexible(
+            child: Text(
+              label,
+              style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold),
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+          style: ElevatedButton.styleFrom(
+            backgroundColor: Colors.transparent,
+            shadowColor: Colors.transparent,
+            foregroundColor: Colors.black,
+            padding: const EdgeInsets.symmetric(horizontal: 6),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(AppConstants.smallRadius),
+            ),
+          ),
+        ),
+      );
+    }
+    return SizedBox(
+      width: double.infinity,
+      height: 34,
+      child: OutlinedButton.icon(
+        onPressed: onTap,
+        icon: Icon(icon, size: 13),
+        label: Flexible(
+          child: Text(
+            label,
+            style: const TextStyle(fontSize: 10),
+            overflow: TextOverflow.ellipsis,
+          ),
+        ),
+        style: OutlinedButton.styleFrom(
+          foregroundColor: Colors.white54,
+          side: BorderSide(color: AppConstants.borderColor),
+          padding: const EdgeInsets.symmetric(horizontal: 6),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(AppConstants.smallRadius),
+          ),
         ),
       ),
     );
@@ -178,34 +276,87 @@ class _DrawModeScreenState extends State<DrawModeScreen> {
   Widget _buildClearButton() {
     return SizedBox(
       width: double.infinity,
-      child: ElevatedButton(
+      height: 32,
+      child: OutlinedButton(
         onPressed: _clearMatrix,
-        style: ElevatedButton.styleFrom(
-          backgroundColor: AppConstants.dangerColor.withOpacity(0.2),
+        style: OutlinedButton.styleFrom(
           foregroundColor: AppConstants.dangerColor,
-          padding: const EdgeInsets.symmetric(vertical: 8),
+          side: BorderSide(color: AppConstants.dangerColor.withOpacity(0.6)),
+          padding: EdgeInsets.zero,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(AppConstants.smallRadius),
+          ),
         ),
-        child: const Icon(Icons.delete, size: 20),
+        child: const Icon(Icons.delete_outline, size: 18),
       ),
     );
   }
 
   Widget _buildDrawingArea() {
-    return Container(
-      margin: const EdgeInsets.all(8),
-      decoration: BoxDecoration(
-        color: AppConstants.surfaceColor,
-        borderRadius: BorderRadius.circular(AppConstants.defaultRadius),
-        border: Border.all(color: AppConstants.borderColor, width: 2),
-      ),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(AppConstants.defaultRadius - 2),
-        child: InteractiveMatrixPreview(
-          matrix: _matrix,
-          selectedColorIndex:
-              _selectedColorIndex % 10, // Limiter à 0-9 pour ESP32
-          isDrawMode: _isDrawMode,
-          onMatrixChanged: () => setState(() {}),
+    return Padding(
+      padding: const EdgeInsets.all(8),
+      child: Container(
+        decoration: BoxDecoration(
+          color: const Color(0xFF080B0F),
+          borderRadius: BorderRadius.circular(AppConstants.defaultRadius),
+          border: Border.all(
+            color: AppConstants.accentColor.withOpacity(0.35),
+            width: 1.5,
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: AppConstants.accentColor.withOpacity(0.12),
+              blurRadius: 24,
+              spreadRadius: 4,
+            ),
+            BoxShadow(
+              color: AppConstants.secondaryAccent.withOpacity(0.06),
+              blurRadius: 40,
+              spreadRadius: 8,
+            ),
+          ],
+        ),
+        child: Column(
+          children: [
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(vertical: 5),
+              decoration: BoxDecoration(
+                color: AppConstants.accentColor.withOpacity(0.07),
+                borderRadius: const BorderRadius.vertical(
+                  top: Radius.circular(AppConstants.defaultRadius - 2),
+                ),
+                border: Border(
+                  bottom: BorderSide(
+                    color: AppConstants.accentColor.withOpacity(0.2),
+                  ),
+                ),
+              ),
+              child: const Text(
+                'PANNEAU LED  ·  32 × 16',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  color: AppConstants.accentColor,
+                  fontSize: 9,
+                  fontWeight: FontWeight.bold,
+                  letterSpacing: 2.5,
+                ),
+              ),
+            ),
+            Expanded(
+              child: ClipRRect(
+                borderRadius: const BorderRadius.vertical(
+                  bottom: Radius.circular(AppConstants.defaultRadius - 2),
+                ),
+                child: InteractiveMatrixPreview(
+                  matrix: _matrix,
+                  selectedColorIndex: _selectedColorIndex % 10,
+                  isDrawMode: _isDrawMode,
+                  onMatrixChanged: () => setState(() {}),
+                ),
+              ),
+            ),
+          ],
         ),
       ),
     );

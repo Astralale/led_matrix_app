@@ -80,17 +80,15 @@ class MatrixPreview extends StatelessWidget {
   Widget _buildCell(int x, int y, double cellSize, double cellMargin) {
     final colorIndex = matrix.getPixel(x, y);
     final isLit = colorIndex != 0;
-    final color = isLit
-        ? AppConstants.colorPalette[colorIndex]
-        : const Color(0xFF21262D);
+    final color = AppConstants.colorPalette[colorIndex];
 
     Widget cell = Container(
       width: cellSize,
       height: cellSize,
       margin: EdgeInsets.all(cellMargin),
       decoration: BoxDecoration(
-        color: color,
-        borderRadius: BorderRadius.circular(cellSize * 0.15),
+        color: isLit ? color : const Color(0xFF141C24),
+        borderRadius: BorderRadius.circular(cellSize * 0.25),
         boxShadow: (isLit && showGlow)
             ? [
                 BoxShadow(
@@ -238,17 +236,15 @@ class _InteractiveMatrixPreviewState extends State<InteractiveMatrixPreview> {
   Widget _buildCell(int x, int y, double cellSize, double cellMargin) {
     final colorIndex = widget.matrix.getPixel(x, y);
     final isLit = colorIndex != 0;
-    final color = isLit
-        ? AppConstants.colorPalette[colorIndex]
-        : const Color(0xFF21262D);
+    final color = AppConstants.colorPalette[colorIndex];
 
     return Container(
       width: cellSize,
       height: cellSize,
       margin: EdgeInsets.all(cellMargin),
       decoration: BoxDecoration(
-        color: color,
-        borderRadius: BorderRadius.circular(cellSize * 0.15),
+        color: isLit ? color : const Color(0xFF141C24),
+        borderRadius: BorderRadius.circular(cellSize * 0.25),
         boxShadow: isLit
             ? [
                 BoxShadow(

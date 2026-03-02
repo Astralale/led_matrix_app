@@ -162,10 +162,6 @@ class _TextModeScreenState extends State<TextModeScreen> {
           const SizedBox(height: 8),
 
           _buildActionButtons(),
-
-          const SizedBox(height: 8),
-
-          _buildDrawModeCard(),
         ],
       ),
     );
@@ -173,7 +169,33 @@ class _TextModeScreenState extends State<TextModeScreen> {
 
   PreferredSizeWidget _buildAppBar() {
     return AppBar(
-      backgroundColor: AppConstants.surfaceColor,
+      backgroundColor: Colors.transparent,
+      elevation: 0,
+      flexibleSpace: Container(
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            colors: [Color(0xFF0D1117), AppConstants.surfaceColor],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+        ),
+      ),
+      bottom: PreferredSize(
+        preferredSize: const Size.fromHeight(1),
+        child: Container(
+          height: 1,
+          decoration: const BoxDecoration(
+            gradient: LinearGradient(
+              colors: [
+                Colors.transparent,
+                AppConstants.accentColor,
+                AppConstants.secondaryAccent,
+                Colors.transparent,
+              ],
+            ),
+          ),
+        ),
+      ),
       title: Row(
         children: [
           Container(
@@ -186,13 +208,30 @@ class _TextModeScreenState extends State<TextModeScreen> {
                 ],
               ),
               borderRadius: BorderRadius.circular(8),
+              boxShadow: [
+                BoxShadow(
+                  color: AppConstants.accentColor.withOpacity(0.4),
+                  blurRadius: 10,
+                  spreadRadius: 1,
+                ),
+              ],
             ),
-            child: const Icon(Icons.text_fields, color: Colors.black, size: 20),
+            child: const Icon(Icons.grid_on, color: Colors.black, size: 20),
           ),
           const SizedBox(width: 12),
-          const Text(
-            'Mode Texte',
-            style: TextStyle(fontWeight: FontWeight.bold),
+          ShaderMask(
+            shaderCallback: (bounds) => const LinearGradient(
+              colors: [AppConstants.accentColor, AppConstants.secondaryAccent],
+            ).createShader(bounds),
+            child: const Text(
+              'LED Matrix',
+              style: TextStyle(
+                fontWeight: FontWeight.bold,
+                fontSize: 18,
+                color: Colors.white,
+                letterSpacing: 1,
+              ),
+            ),
           ),
         ],
       ),
@@ -201,11 +240,13 @@ class _TextModeScreenState extends State<TextModeScreen> {
           padding: const EdgeInsets.only(right: 8),
           child: ElevatedButton.icon(
             onPressed: _openDrawMode,
-            icon: const Icon(Icons.brush, size: 18),
-            label: const Text('Dessiner'),
+            icon: const Icon(Icons.brush, size: 16),
+            label: const Text('Dessiner', style: TextStyle(fontSize: 13)),
             style: ElevatedButton.styleFrom(
-              backgroundColor: AppConstants.successColor,
+              backgroundColor: AppConstants.successColor.withOpacity(0.85),
               foregroundColor: Colors.white,
+              elevation: 0,
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
             ),
           ),
         ),
@@ -274,16 +315,66 @@ class _TextModeScreenState extends State<TextModeScreen> {
   Widget _buildMatrixPreview() {
     return Flexible(
       flex: 2,
-      child: Container(
-        margin: const EdgeInsets.all(AppConstants.defaultPadding),
-        decoration: BoxDecoration(
-          color: AppConstants.surfaceColor,
-          borderRadius: BorderRadius.circular(AppConstants.defaultRadius),
-          border: Border.all(color: AppConstants.borderColor, width: 2),
-        ),
-        child: ClipRRect(
-          borderRadius: BorderRadius.circular(AppConstants.defaultRadius - 2),
-          child: MatrixPreview(matrix: _matrix, showGlow: false),
+      child: Padding(
+        padding: const EdgeInsets.all(AppConstants.defaultPadding),
+        child: Container(
+          decoration: BoxDecoration(
+            color: const Color(0xFF080B0F),
+            borderRadius: BorderRadius.circular(AppConstants.defaultRadius),
+            border: Border.all(
+              color: AppConstants.accentColor.withOpacity(0.35),
+              width: 1.5,
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: AppConstants.accentColor.withOpacity(0.12),
+                blurRadius: 24,
+                spreadRadius: 4,
+              ),
+              BoxShadow(
+                color: AppConstants.secondaryAccent.withOpacity(0.06),
+                blurRadius: 40,
+                spreadRadius: 8,
+              ),
+            ],
+          ),
+          child: Column(
+            children: [
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.symmetric(vertical: 5),
+                decoration: BoxDecoration(
+                  color: AppConstants.accentColor.withOpacity(0.07),
+                  borderRadius: const BorderRadius.vertical(
+                    top: Radius.circular(AppConstants.defaultRadius - 2),
+                  ),
+                  border: Border(
+                    bottom: BorderSide(
+                      color: AppConstants.accentColor.withOpacity(0.2),
+                    ),
+                  ),
+                ),
+                child: const Text(
+                  'PANNEAU LED  ·  32 × 16',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    color: AppConstants.accentColor,
+                    fontSize: 9,
+                    fontWeight: FontWeight.bold,
+                    letterSpacing: 2.5,
+                  ),
+                ),
+              ),
+              Expanded(
+                child: ClipRRect(
+                  borderRadius: const BorderRadius.vertical(
+                    bottom: Radius.circular(AppConstants.defaultRadius - 2),
+                  ),
+                  child: MatrixPreview(matrix: _matrix, showGlow: true),
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -368,20 +459,42 @@ class _TextModeScreenState extends State<TextModeScreen> {
       ),
       child: Row(
         children: [
-          // Bouton Appliquer
+          // Bouton Appliquer avec dégradé
           Expanded(
             flex: 2,
-            child: ElevatedButton.icon(
-              onPressed: _applyText,
-              icon: const Icon(Icons.check, size: 18),
-              label: const Text('Appliquer', style: TextStyle(fontSize: 14)),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppConstants.accentColor,
-                foregroundColor: Colors.black,
-                padding: const EdgeInsets.symmetric(vertical: 12),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(
-                    AppConstants.defaultRadius,
+            child: Container(
+              height: 46,
+              decoration: BoxDecoration(
+                gradient: const LinearGradient(
+                  colors: [
+                    AppConstants.accentColor,
+                    AppConstants.secondaryAccent,
+                  ],
+                ),
+                borderRadius: BorderRadius.circular(AppConstants.defaultRadius),
+                boxShadow: [
+                  BoxShadow(
+                    color: AppConstants.accentColor.withOpacity(0.4),
+                    blurRadius: 14,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
+              ),
+              child: ElevatedButton.icon(
+                onPressed: _applyText,
+                icon: const Icon(Icons.bolt_rounded, size: 18),
+                label: const Text(
+                  'Appliquer',
+                  style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
+                ),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.transparent,
+                  shadowColor: Colors.transparent,
+                  foregroundColor: Colors.black,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(
+                      AppConstants.defaultRadius,
+                    ),
                   ),
                 ),
               ),
@@ -390,84 +503,27 @@ class _TextModeScreenState extends State<TextModeScreen> {
           const SizedBox(width: 8),
           // Bouton Effacer
           Expanded(
-            child: OutlinedButton.icon(
-              onPressed: _clearMatrix,
-              icon: const Icon(Icons.delete_outline, size: 18),
-              label: const Text('Effacer', style: TextStyle(fontSize: 14)),
-              style: OutlinedButton.styleFrom(
-                foregroundColor: AppConstants.dangerColor,
-                side: const BorderSide(color: AppConstants.dangerColor),
-                padding: const EdgeInsets.symmetric(vertical: 12),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(
-                    AppConstants.defaultRadius,
+            child: SizedBox(
+              height: 46,
+              child: OutlinedButton.icon(
+                onPressed: _clearMatrix,
+                icon: const Icon(Icons.delete_outline, size: 18),
+                label: const Text('Effacer', style: TextStyle(fontSize: 14)),
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: AppConstants.dangerColor,
+                  side: BorderSide(
+                    color: AppConstants.dangerColor.withOpacity(0.7),
+                  ),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(
+                      AppConstants.defaultRadius,
+                    ),
                   ),
                 ),
               ),
             ),
           ),
         ],
-      ),
-    );
-  }
-
-  Widget _buildDrawModeCard() {
-    return GestureDetector(
-      onTap: _openDrawMode,
-      child: Container(
-        margin: const EdgeInsets.fromLTRB(
-          AppConstants.defaultPadding,
-          0,
-          AppConstants.defaultPadding,
-          AppConstants.defaultPadding,
-        ),
-        padding: const EdgeInsets.all(12),
-        decoration: BoxDecoration(
-          color: AppConstants.surfaceColor,
-          borderRadius: BorderRadius.circular(AppConstants.defaultRadius),
-          border: Border.all(color: AppConstants.successColor.withOpacity(0.5)),
-        ),
-        child: Row(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: AppConstants.successColor.withOpacity(0.2),
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: const Icon(
-                Icons.brush,
-                color: AppConstants.successColor,
-                size: 20,
-              ),
-            ),
-            const SizedBox(width: 10),
-            const Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Mode Dessin',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontWeight: FontWeight.bold,
-                      fontSize: 14,
-                    ),
-                  ),
-                  Text(
-                    'Dessinez pixel par pixel',
-                    style: TextStyle(color: Colors.white60, fontSize: 11),
-                  ),
-                ],
-              ),
-            ),
-            const Icon(
-              Icons.arrow_forward_ios,
-              color: Colors.white38,
-              size: 14,
-            ),
-          ],
-        ),
       ),
     );
   }
