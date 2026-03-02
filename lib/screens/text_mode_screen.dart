@@ -195,7 +195,7 @@ class _TextModeScreenState extends State<TextModeScreen> {
           ),
           const SizedBox(width: 12),
           const Text(
-            'LED Matrix',
+            'Collection femmes',
             style: TextStyle(
               fontWeight: FontWeight.bold,
               fontSize: 18,

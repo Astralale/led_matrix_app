@@ -44,6 +44,15 @@ class _DrawModeScreenState extends State<DrawModeScreen> {
   }
 
   @override
+  void dispose() {
+    SystemChrome.setPreferredOrientations([
+      DeviceOrientation.portraitUp,
+      DeviceOrientation.portraitDown,
+    ]);
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppConstants.backgroundColor,
@@ -100,15 +109,6 @@ class _DrawModeScreenState extends State<DrawModeScreen> {
                   _buildSaveButton(),
                   const SizedBox(height: 8),
                   _buildDivider(),
-                  const SizedBox(height: 8),
-                  _buildModeButton(
-                    icon: Icons.auto_fix_high,
-                    label: 'Gomme',
-                    isSelected: !_isDrawMode,
-                    onTap: () => setState(() => _isDrawMode = !_isDrawMode),
-                  ),
-                  const SizedBox(height: 8),
-                  _buildDivider(),
                   const SizedBox(height: 4),
                   Expanded(
                     child: GridColorPalette(
@@ -116,7 +116,7 @@ class _DrawModeScreenState extends State<DrawModeScreen> {
                       onColorSelected: (index) {
                         setState(() {
                           _selectedColorIndex = index;
-                          if (index != 0) _isDrawMode = true;
+                          _isDrawMode = index != 0;
                         });
                       },
                       useExtendedPalette: true,
@@ -164,60 +164,6 @@ class _DrawModeScreenState extends State<DrawModeScreen> {
               style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
             ),
           ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildModeButton({
-    required IconData icon,
-    required String label,
-    required bool isSelected,
-    required VoidCallback onTap,
-  }) {
-    if (isSelected) {
-      return SizedBox(
-        width: double.infinity,
-        height: 34,
-        child: ElevatedButton.icon(
-          onPressed: onTap,
-          icon: Icon(icon, size: 13),
-          label: Flexible(
-            child: Text(
-              label,
-              style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w600),
-              overflow: TextOverflow.ellipsis,
-            ),
-          ),
-          style: ElevatedButton.styleFrom(
-            padding: const EdgeInsets.symmetric(horizontal: 6),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(AppConstants.smallRadius),
-            ),
-          ),
-        ),
-      );
-    }
-    return SizedBox(
-      width: double.infinity,
-      height: 34,
-      child: OutlinedButton.icon(
-        onPressed: onTap,
-        icon: Icon(icon, size: 13),
-        label: Flexible(
-          child: Text(
-            label,
-            style: const TextStyle(fontSize: 10),
-            overflow: TextOverflow.ellipsis,
-          ),
-        ),
-        style: OutlinedButton.styleFrom(
-          foregroundColor: const Color(0xFF5A3A3A),
-          side: const BorderSide(color: AppConstants.borderColor),
-          padding: const EdgeInsets.symmetric(horizontal: 6),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(AppConstants.smallRadius),
-          ),
         ),
       ),
     );

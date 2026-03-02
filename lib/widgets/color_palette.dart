@@ -129,11 +129,13 @@ class GridColorPalette extends StatelessWidget {
           onTap: () => onColorSelected(index),
           child: Container(
             decoration: BoxDecoration(
-              color: palette[index],
+              color: index == 0 ? AppConstants.surfaceColor : palette[index],
               borderRadius: BorderRadius.circular(4),
               border: Border.all(
                 color: isSelected
                     ? AppConstants.accentColor
+                    : index == 0
+                    ? AppConstants.borderColor
                     : AppConstants.borderColor,
                 width: isSelected ? 2 : 1,
               ),
@@ -155,7 +157,11 @@ class GridColorPalette extends StatelessWidget {
 
   Widget? _buildCellContent(int index, bool isSelected) {
     if (index == 0) {
-      return Icon(Icons.not_interested, color: Colors.grey.shade600, size: 12);
+      return Icon(
+        Icons.auto_fix_high,
+        color: isSelected ? AppConstants.accentColor : Colors.grey.shade500,
+        size: 12,
+      );
     }
     if (isSelected) {
       return Icon(
