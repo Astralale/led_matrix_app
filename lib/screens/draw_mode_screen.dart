@@ -64,18 +64,8 @@ class _DrawModeScreenState extends State<DrawModeScreen> {
       decoration: BoxDecoration(
         color: AppConstants.surfaceColor,
         border: Border(
-          right: BorderSide(
-            color: AppConstants.accentColor.withOpacity(0.25),
-            width: 1.5,
-          ),
+          right: BorderSide(color: AppConstants.borderColor, width: 1),
         ),
-        boxShadow: [
-          BoxShadow(
-            color: AppConstants.accentColor.withOpacity(0.06),
-            blurRadius: 16,
-            offset: const Offset(4, 0),
-          ),
-        ],
       ),
       child: Column(
         children: [
@@ -84,16 +74,9 @@ class _DrawModeScreenState extends State<DrawModeScreen> {
             width: double.infinity,
             padding: const EdgeInsets.symmetric(vertical: 10),
             decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: [
-                  AppConstants.accentColor.withOpacity(0.18),
-                  AppConstants.secondaryAccent.withOpacity(0.10),
-                ],
-              ),
+              color: AppConstants.accentColor.withOpacity(0.06),
               border: Border(
-                bottom: BorderSide(
-                  color: AppConstants.accentColor.withOpacity(0.3),
-                ),
+                bottom: BorderSide(color: AppConstants.borderColor),
               ),
             ),
             child: const Text(
@@ -102,8 +85,8 @@ class _DrawModeScreenState extends State<DrawModeScreen> {
               style: TextStyle(
                 color: AppConstants.accentColor,
                 fontSize: 9,
-                fontWeight: FontWeight.bold,
-                letterSpacing: 2.5,
+                fontWeight: FontWeight.w600,
+                letterSpacing: 2.0,
               ),
             ),
           ),
@@ -154,50 +137,33 @@ class _DrawModeScreenState extends State<DrawModeScreen> {
   Widget _buildDivider() {
     return Container(
       height: 1,
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [
-            Colors.transparent,
-            AppConstants.borderColor,
-            Colors.transparent,
-          ],
-        ),
-      ),
+      color: AppConstants.borderColor.withOpacity(0.6),
     );
   }
 
   Widget _buildSaveButton() {
-    return Container(
+    return SizedBox(
       width: double.infinity,
       height: 36,
-      decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          colors: [AppConstants.accentColor, AppConstants.secondaryAccent],
-        ),
-        borderRadius: BorderRadius.circular(AppConstants.smallRadius),
-        boxShadow: [
-          BoxShadow(
-            color: AppConstants.accentColor.withOpacity(0.45),
-            blurRadius: 10,
-            offset: const Offset(0, 3),
-          ),
-        ],
-      ),
-      child: ElevatedButton.icon(
+      child: ElevatedButton(
         onPressed: _saveAndGoBack,
-        icon: const Icon(Icons.check, size: 14),
-        label: const Text(
-          'OK',
-          style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
-        ),
         style: ElevatedButton.styleFrom(
-          backgroundColor: Colors.transparent,
-          shadowColor: Colors.transparent,
-          foregroundColor: Colors.black,
-          padding: EdgeInsets.zero,
+          padding: const EdgeInsets.symmetric(horizontal: 6),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(AppConstants.smallRadius),
           ),
+        ),
+        child: const Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(Icons.check, size: 14),
+            SizedBox(width: 4),
+            Text(
+              'OK',
+              style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
+            ),
+          ],
         ),
       ),
     );
@@ -210,36 +176,20 @@ class _DrawModeScreenState extends State<DrawModeScreen> {
     required VoidCallback onTap,
   }) {
     if (isSelected) {
-      return Container(
+      return SizedBox(
         width: double.infinity,
         height: 34,
-        decoration: BoxDecoration(
-          gradient: const LinearGradient(
-            colors: [AppConstants.accentColor, AppConstants.secondaryAccent],
-          ),
-          borderRadius: BorderRadius.circular(AppConstants.smallRadius),
-          boxShadow: [
-            BoxShadow(
-              color: AppConstants.accentColor.withOpacity(0.35),
-              blurRadius: 8,
-              offset: const Offset(0, 3),
-            ),
-          ],
-        ),
         child: ElevatedButton.icon(
           onPressed: onTap,
           icon: Icon(icon, size: 13),
           label: Flexible(
             child: Text(
               label,
-              style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold),
+              style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w600),
               overflow: TextOverflow.ellipsis,
             ),
           ),
           style: ElevatedButton.styleFrom(
-            backgroundColor: Colors.transparent,
-            shadowColor: Colors.transparent,
-            foregroundColor: Colors.black,
             padding: const EdgeInsets.symmetric(horizontal: 6),
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(AppConstants.smallRadius),
@@ -262,8 +212,8 @@ class _DrawModeScreenState extends State<DrawModeScreen> {
           ),
         ),
         style: OutlinedButton.styleFrom(
-          foregroundColor: Colors.white54,
-          side: BorderSide(color: AppConstants.borderColor),
+          foregroundColor: const Color(0xFF5A3A3A),
+          side: const BorderSide(color: AppConstants.borderColor),
           padding: const EdgeInsets.symmetric(horizontal: 6),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(AppConstants.smallRadius),
@@ -281,7 +231,7 @@ class _DrawModeScreenState extends State<DrawModeScreen> {
         onPressed: _clearMatrix,
         style: OutlinedButton.styleFrom(
           foregroundColor: AppConstants.dangerColor,
-          side: BorderSide(color: AppConstants.dangerColor.withOpacity(0.6)),
+          side: BorderSide(color: AppConstants.dangerColor.withOpacity(0.4)),
           padding: EdgeInsets.zero,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(AppConstants.smallRadius),
@@ -297,49 +247,29 @@ class _DrawModeScreenState extends State<DrawModeScreen> {
       padding: const EdgeInsets.all(8),
       child: Container(
         decoration: BoxDecoration(
-          color: const Color(0xFF080B0F),
+          color: const Color(0xFF3D1010),
           borderRadius: BorderRadius.circular(AppConstants.defaultRadius),
-          border: Border.all(
-            color: AppConstants.accentColor.withOpacity(0.35),
-            width: 1.5,
-          ),
-          boxShadow: [
-            BoxShadow(
-              color: AppConstants.accentColor.withOpacity(0.12),
-              blurRadius: 24,
-              spreadRadius: 4,
-            ),
-            BoxShadow(
-              color: AppConstants.secondaryAccent.withOpacity(0.06),
-              blurRadius: 40,
-              spreadRadius: 8,
-            ),
-          ],
+          border: Border.all(color: AppConstants.borderColor, width: 1),
         ),
         child: Column(
           children: [
             Container(
               width: double.infinity,
-              padding: const EdgeInsets.symmetric(vertical: 5),
+              padding: const EdgeInsets.symmetric(vertical: 7),
               decoration: BoxDecoration(
-                color: AppConstants.accentColor.withOpacity(0.07),
+                color: AppConstants.accentColor.withOpacity(0.10),
                 borderRadius: const BorderRadius.vertical(
                   top: Radius.circular(AppConstants.defaultRadius - 2),
-                ),
-                border: Border(
-                  bottom: BorderSide(
-                    color: AppConstants.accentColor.withOpacity(0.2),
-                  ),
                 ),
               ),
               child: const Text(
                 'PANNEAU LED  ·  32 × 16',
                 textAlign: TextAlign.center,
                 style: TextStyle(
-                  color: AppConstants.accentColor,
-                  fontSize: 9,
-                  fontWeight: FontWeight.bold,
-                  letterSpacing: 2.5,
+                  color: AppConstants.backgroundColor,
+                  fontSize: 11,
+                  fontWeight: FontWeight.w700,
+                  letterSpacing: 2.0,
                 ),
               ),
             ),

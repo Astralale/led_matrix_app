@@ -169,68 +169,38 @@ class _TextModeScreenState extends State<TextModeScreen> {
 
   PreferredSizeWidget _buildAppBar() {
     return AppBar(
-      backgroundColor: Colors.transparent,
+      backgroundColor: AppConstants.backgroundColor,
       elevation: 0,
-      flexibleSpace: Container(
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            colors: [Color(0xFF0D1117), AppConstants.surfaceColor],
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-          ),
-        ),
-      ),
+      surfaceTintColor: Colors.transparent,
       bottom: PreferredSize(
         preferredSize: const Size.fromHeight(1),
-        child: Container(
-          height: 1,
-          decoration: const BoxDecoration(
-            gradient: LinearGradient(
-              colors: [
-                Colors.transparent,
-                AppConstants.accentColor,
-                AppConstants.secondaryAccent,
-                Colors.transparent,
-              ],
-            ),
-          ),
-        ),
+        child: Container(height: 1, color: AppConstants.borderColor),
       ),
       title: Row(
         children: [
           Container(
-            padding: const EdgeInsets.all(8),
+            padding: const EdgeInsets.all(7),
             decoration: BoxDecoration(
-              gradient: const LinearGradient(
-                colors: [
-                  AppConstants.accentColor,
-                  AppConstants.secondaryAccent,
-                ],
-              ),
+              color: AppConstants.accentColor.withOpacity(0.08),
               borderRadius: BorderRadius.circular(8),
-              boxShadow: [
-                BoxShadow(
-                  color: AppConstants.accentColor.withOpacity(0.4),
-                  blurRadius: 10,
-                  spreadRadius: 1,
-                ),
-              ],
+              border: Border.all(
+                color: AppConstants.accentColor.withOpacity(0.2),
+              ),
             ),
-            child: const Icon(Icons.grid_on, color: Colors.black, size: 20),
+            child: const Icon(
+              Icons.grid_on,
+              color: AppConstants.accentColor,
+              size: 20,
+            ),
           ),
           const SizedBox(width: 12),
-          ShaderMask(
-            shaderCallback: (bounds) => const LinearGradient(
-              colors: [AppConstants.accentColor, AppConstants.secondaryAccent],
-            ).createShader(bounds),
-            child: const Text(
-              'LED Matrix',
-              style: TextStyle(
-                fontWeight: FontWeight.bold,
-                fontSize: 18,
-                color: Colors.white,
-                letterSpacing: 1,
-              ),
+          const Text(
+            'LED Matrix',
+            style: TextStyle(
+              fontWeight: FontWeight.bold,
+              fontSize: 18,
+              color: AppConstants.accentColor,
+              letterSpacing: 0.5,
             ),
           ),
         ],
@@ -243,10 +213,13 @@ class _TextModeScreenState extends State<TextModeScreen> {
             icon: const Icon(Icons.brush, size: 16),
             label: const Text('Dessiner', style: TextStyle(fontSize: 13)),
             style: ElevatedButton.styleFrom(
-              backgroundColor: AppConstants.successColor.withOpacity(0.85),
-              foregroundColor: Colors.white,
+              backgroundColor: AppConstants.borderColor,
+              foregroundColor: AppConstants.accentColor,
               elevation: 0,
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(AppConstants.defaultRadius),
+              ),
             ),
           ),
         ),
@@ -266,14 +239,14 @@ class _TextModeScreenState extends State<TextModeScreen> {
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
           decoration: BoxDecoration(
             color: _scrollEnabled
-                ? AppConstants.secondaryAccent.withOpacity(0.18)
+                ? AppConstants.accentColor.withOpacity(0.06)
                 : AppConstants.surfaceColor,
             borderRadius: BorderRadius.circular(AppConstants.defaultRadius),
             border: Border.all(
               color: _scrollEnabled
-                  ? AppConstants.secondaryAccent
+                  ? AppConstants.accentColor.withOpacity(0.5)
                   : AppConstants.borderColor,
-              width: _scrollEnabled ? 1.5 : 1,
+              width: 1,
             ),
           ),
           child: Row(
@@ -282,8 +255,8 @@ class _TextModeScreenState extends State<TextModeScreen> {
                 Icons.animation,
                 size: 18,
                 color: _scrollEnabled
-                    ? AppConstants.secondaryAccent
-                    : Colors.white38,
+                    ? AppConstants.accentColor
+                    : Colors.grey.shade400,
               ),
               const SizedBox(width: 8),
               Text(
@@ -291,10 +264,10 @@ class _TextModeScreenState extends State<TextModeScreen> {
                 style: TextStyle(
                   fontSize: 13,
                   color: _scrollEnabled
-                      ? AppConstants.secondaryAccent
-                      : Colors.white54,
+                      ? AppConstants.accentColor
+                      : const Color(0xFF5A3A3A),
                   fontWeight: _scrollEnabled
-                      ? FontWeight.bold
+                      ? FontWeight.w600
                       : FontWeight.normal,
                 ),
               ),
@@ -302,7 +275,6 @@ class _TextModeScreenState extends State<TextModeScreen> {
               Switch(
                 value: _scrollEnabled,
                 onChanged: (v) => setState(() => _scrollEnabled = v),
-                activeColor: AppConstants.secondaryAccent,
                 materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
               ),
             ],
@@ -319,49 +291,29 @@ class _TextModeScreenState extends State<TextModeScreen> {
         padding: const EdgeInsets.all(AppConstants.defaultPadding),
         child: Container(
           decoration: BoxDecoration(
-            color: const Color(0xFF080B0F),
+            color: const Color(0xFF3D1010),
             borderRadius: BorderRadius.circular(AppConstants.defaultRadius),
-            border: Border.all(
-              color: AppConstants.accentColor.withOpacity(0.35),
-              width: 1.5,
-            ),
-            boxShadow: [
-              BoxShadow(
-                color: AppConstants.accentColor.withOpacity(0.12),
-                blurRadius: 24,
-                spreadRadius: 4,
-              ),
-              BoxShadow(
-                color: AppConstants.secondaryAccent.withOpacity(0.06),
-                blurRadius: 40,
-                spreadRadius: 8,
-              ),
-            ],
+            border: Border.all(color: AppConstants.borderColor, width: 1),
           ),
           child: Column(
             children: [
               Container(
                 width: double.infinity,
-                padding: const EdgeInsets.symmetric(vertical: 5),
+                padding: const EdgeInsets.symmetric(vertical: 7),
                 decoration: BoxDecoration(
-                  color: AppConstants.accentColor.withOpacity(0.07),
+                  color: AppConstants.accentColor.withOpacity(0.10),
                   borderRadius: const BorderRadius.vertical(
                     top: Radius.circular(AppConstants.defaultRadius - 2),
-                  ),
-                  border: Border(
-                    bottom: BorderSide(
-                      color: AppConstants.accentColor.withOpacity(0.2),
-                    ),
                   ),
                 ),
                 child: const Text(
                   'PANNEAU LED  ·  32 × 16',
                   textAlign: TextAlign.center,
                   style: TextStyle(
-                    color: AppConstants.accentColor,
-                    fontSize: 9,
-                    fontWeight: FontWeight.bold,
-                    letterSpacing: 2.5,
+                    color: AppConstants.backgroundColor,
+                    fontSize: 11,
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: 2.0,
                   ),
                 ),
               ),
@@ -387,38 +339,19 @@ class _TextModeScreenState extends State<TextModeScreen> {
       ),
       child: TextField(
         controller: _textController,
-        style: const TextStyle(color: Colors.white, fontSize: 16),
+        style: const TextStyle(color: Color(0xFF1A1A1A), fontSize: 16),
         decoration: InputDecoration(
           hintText: 'Entrez votre texte...',
-          hintStyle: TextStyle(color: Colors.grey.shade600),
+          hintStyle: TextStyle(color: Colors.grey.shade400),
           filled: true,
           fillColor: AppConstants.surfaceColor,
-          contentPadding: const EdgeInsets.symmetric(
-            horizontal: 12,
-            vertical: 12,
-          ),
-          border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(AppConstants.defaultRadius),
-            borderSide: const BorderSide(color: AppConstants.borderColor),
-          ),
-          enabledBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(AppConstants.defaultRadius),
-            borderSide: const BorderSide(color: AppConstants.borderColor),
-          ),
-          focusedBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(AppConstants.defaultRadius),
-            borderSide: const BorderSide(
-              color: AppConstants.accentColor,
-              width: 2,
-            ),
-          ),
           prefixIcon: const Icon(
             Icons.text_fields,
             color: AppConstants.accentColor,
             size: 20,
           ),
           suffixIcon: IconButton(
-            icon: const Icon(Icons.clear, color: Colors.grey, size: 20),
+            icon: Icon(Icons.clear, color: Colors.grey.shade400, size: 20),
             onPressed: () => _textController.clear(),
           ),
         ),
@@ -437,7 +370,11 @@ class _TextModeScreenState extends State<TextModeScreen> {
         children: [
           const Text(
             'Couleur du texte :',
-            style: TextStyle(color: Colors.white70, fontSize: 12),
+            style: TextStyle(
+              color: Color(0xFF5A3A3A),
+              fontSize: 12,
+              fontWeight: FontWeight.w500,
+            ),
           ),
           const SizedBox(height: 6),
           HorizontalColorPalette(
@@ -454,48 +391,24 @@ class _TextModeScreenState extends State<TextModeScreen> {
 
   Widget _buildActionButtons() {
     return Padding(
-      padding: const EdgeInsets.symmetric(
-        horizontal: AppConstants.defaultPadding,
+      padding: const EdgeInsets.only(
+        left: AppConstants.defaultPadding,
+        right: AppConstants.defaultPadding,
+        bottom: AppConstants.defaultPadding,
       ),
       child: Row(
         children: [
           // Bouton Appliquer avec dégradé
           Expanded(
             flex: 2,
-            child: Container(
+            child: SizedBox(
               height: 46,
-              decoration: BoxDecoration(
-                gradient: const LinearGradient(
-                  colors: [
-                    AppConstants.accentColor,
-                    AppConstants.secondaryAccent,
-                  ],
-                ),
-                borderRadius: BorderRadius.circular(AppConstants.defaultRadius),
-                boxShadow: [
-                  BoxShadow(
-                    color: AppConstants.accentColor.withOpacity(0.4),
-                    blurRadius: 14,
-                    offset: const Offset(0, 4),
-                  ),
-                ],
-              ),
               child: ElevatedButton.icon(
                 onPressed: _applyText,
-                icon: const Icon(Icons.bolt_rounded, size: 18),
+                icon: const Icon(Icons.check_rounded, size: 18),
                 label: const Text(
                   'Appliquer',
-                  style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
-                ),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.transparent,
-                  shadowColor: Colors.transparent,
-                  foregroundColor: Colors.black,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(
-                      AppConstants.defaultRadius,
-                    ),
-                  ),
+                  style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
                 ),
               ),
             ),
@@ -512,12 +425,7 @@ class _TextModeScreenState extends State<TextModeScreen> {
                 style: OutlinedButton.styleFrom(
                   foregroundColor: AppConstants.dangerColor,
                   side: BorderSide(
-                    color: AppConstants.dangerColor.withOpacity(0.7),
-                  ),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(
-                      AppConstants.defaultRadius,
-                    ),
+                    color: AppConstants.dangerColor.withOpacity(0.5),
                   ),
                 ),
               ),

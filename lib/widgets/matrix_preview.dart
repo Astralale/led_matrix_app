@@ -87,7 +87,7 @@ class MatrixPreview extends StatelessWidget {
       height: cellSize,
       margin: EdgeInsets.all(cellMargin),
       decoration: BoxDecoration(
-        color: isLit ? color : const Color(0xFF141C24),
+        color: isLit ? color : const Color(0xFF5C1F1F),
         borderRadius: BorderRadius.circular(cellSize * 0.25),
         boxShadow: (isLit && showGlow)
             ? [
@@ -243,7 +243,7 @@ class _InteractiveMatrixPreviewState extends State<InteractiveMatrixPreview> {
       height: cellSize,
       margin: EdgeInsets.all(cellMargin),
       decoration: BoxDecoration(
-        color: isLit ? color : const Color(0xFF141C24),
+        color: isLit ? color : const Color(0xFF5C1F1F),
         borderRadius: BorderRadius.circular(cellSize * 0.25),
         boxShadow: isLit
             ? [

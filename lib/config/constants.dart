@@ -22,13 +22,13 @@ class AppConstants {
 
   static const List<int> textModeColors = [1, 2, 3, 4, 5, 6, 7, 8, 9];
 
-  static const Color backgroundColor = Color(0xFF0D1117);
-  static const Color surfaceColor = Color(0xFF161B22);
-  static const Color borderColor = Color(0xFF30363D);
-  static const Color accentColor = Color(0xFF00FF88);
-  static const Color secondaryAccent = Color(0xFF00CCFF);
-  static const Color dangerColor = Color(0xFFFF4444);
-  static const Color successColor = Color(0xFF238636);
+  static const Color backgroundColor = Color(0xFFFFFFFF);
+  static const Color surfaceColor = Color(0xFFFDF5F5);
+  static const Color borderColor = Color(0xFFEBD0D0);
+  static const Color accentColor = Color(0xFF620505);
+  static const Color secondaryAccent = Color(0xFF9B2020);
+  static const Color dangerColor = Color(0xFFB33030);
+  static const Color successColor = Color(0xFF2E6B2E);
 
   static const double defaultPadding = 12.0;
   static const double defaultRadius = 10.0;

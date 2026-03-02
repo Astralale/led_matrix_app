@@ -50,7 +50,9 @@ class HorizontalColorPalette extends StatelessWidget {
                 borderRadius: BorderRadius.circular(6),
                 color: AppConstants.colorPalette[colorIndex],
                 border: Border.all(
-                  color: isSelected ? Colors.white : Colors.transparent,
+                  color: isSelected
+                      ? AppConstants.accentColor
+                      : Colors.transparent,
                   width: 2.5,
                 ),
                 boxShadow: isSelected && colorIndex != 0
@@ -130,7 +132,9 @@ class GridColorPalette extends StatelessWidget {
               color: palette[index],
               borderRadius: BorderRadius.circular(4),
               border: Border.all(
-                color: isSelected ? Colors.white : Colors.grey.shade700,
+                color: isSelected
+                    ? AppConstants.accentColor
+                    : AppConstants.borderColor,
                 width: isSelected ? 2 : 1,
               ),
               boxShadow: isSelected && index != 0

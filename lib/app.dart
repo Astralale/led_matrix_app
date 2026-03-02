@@ -24,19 +24,48 @@ class LedMatrixApp extends StatelessWidget {
         useMaterial3: true,
         colorScheme: ColorScheme.fromSeed(
           seedColor: AppConstants.accentColor,
-          brightness: Brightness.dark,
+          brightness: Brightness.light,
         ),
 
         // Personnalisation des composants
         scaffoldBackgroundColor: AppConstants.backgroundColor,
 
         appBarTheme: const AppBarTheme(
-          backgroundColor: AppConstants.surfaceColor,
+          backgroundColor: AppConstants.backgroundColor,
+          foregroundColor: AppConstants.accentColor,
           elevation: 0,
+          surfaceTintColor: Colors.transparent,
+        ),
+
+        inputDecorationTheme: InputDecorationTheme(
+          filled: true,
+          fillColor: AppConstants.surfaceColor,
+          contentPadding: const EdgeInsets.symmetric(
+            horizontal: 12,
+            vertical: 12,
+          ),
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(AppConstants.defaultRadius),
+            borderSide: const BorderSide(color: AppConstants.borderColor),
+          ),
+          enabledBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(AppConstants.defaultRadius),
+            borderSide: const BorderSide(color: AppConstants.borderColor),
+          ),
+          focusedBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(AppConstants.defaultRadius),
+            borderSide: const BorderSide(
+              color: AppConstants.accentColor,
+              width: 1.5,
+            ),
+          ),
         ),
 
         elevatedButtonTheme: ElevatedButtonThemeData(
           style: ElevatedButton.styleFrom(
+            backgroundColor: AppConstants.accentColor,
+            foregroundColor: Colors.white,
+            elevation: 0,
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(AppConstants.defaultRadius),
             ),
@@ -45,10 +74,27 @@ class LedMatrixApp extends StatelessWidget {
 
         outlinedButtonTheme: OutlinedButtonThemeData(
           style: OutlinedButton.styleFrom(
+            foregroundColor: AppConstants.accentColor,
+            side: const BorderSide(color: AppConstants.borderColor),
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(AppConstants.defaultRadius),
             ),
           ),
+        ),
+
+        switchTheme: SwitchThemeData(
+          thumbColor: WidgetStateProperty.resolveWith((states) {
+            if (states.contains(WidgetState.selected)) {
+              return AppConstants.accentColor;
+            }
+            return Colors.grey.shade400;
+          }),
+          trackColor: WidgetStateProperty.resolveWith((states) {
+            if (states.contains(WidgetState.selected)) {
+              return AppConstants.accentColor.withOpacity(0.3);
+            }
+            return AppConstants.borderColor;
+          }),
         ),
       ),
 
