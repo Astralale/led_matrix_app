@@ -52,9 +52,16 @@ class _TextModeScreenState extends State<TextModeScreen> {
     _stopScrolling();
 
     if (TextRenderer.textFits(text)) {
-      // Text fits statically
+      // Text fits → center horizontally
+      final centeredX =
+          (AppConstants.matrixWidth - TextRenderer.getTextWidth(text)) ~/ 2;
       setState(() {
-        TextRenderer.drawText(_matrix, text, colorIndex: _selectedColorIndex);
+        TextRenderer.drawText(
+          _matrix,
+          text,
+          colorIndex: _selectedColorIndex,
+          startX: centeredX,
+        );
       });
     } else {
       // Text too long → start scrolling
