@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../config/constants.dart';
@@ -21,6 +22,13 @@ class _TextModeScreenState extends State<TextModeScreen> {
 
   int _selectedColorIndex = 1;
 
+  // Scroll animation
+  Timer? _scrollTimer;
+  int _scrollOffset = 0;
+  String _currentText = '';
+  bool _isScrolling = false;
+  static const int _scrollSpeedMs = 60;
+
   @override
   void initState() {
     super.initState();
@@ -32,6 +40,7 @@ class _TextModeScreenState extends State<TextModeScreen> {
 
   @override
   void dispose() {
+    _scrollTimer?.cancel();
     _textController.dispose();
     super.dispose();
   }
@@ -39,22 +48,62 @@ class _TextModeScreenState extends State<TextModeScreen> {
   void _applyText() {
     if (_textController.text.isEmpty) return;
 
-    setState(() {
-      TextRenderer.drawText(
-        _matrix,
-        _textController.text,
-        colorIndex: _selectedColorIndex,
-      );
-    });
+    final text = _textController.text;
+    _stopScrolling();
+
+    if (TextRenderer.textFits(text)) {
+      // Text fits statically
+      setState(() {
+        TextRenderer.drawText(_matrix, text, colorIndex: _selectedColorIndex);
+      });
+    } else {
+      // Text too long → start scrolling
+      _currentText = text;
+      _scrollOffset = AppConstants.matrixWidth;
+      _startScrolling();
+    }
+  }
+
+  void _startScrolling() {
+    _isScrolling = true;
+    _scrollTimer = Timer.periodic(
+      const Duration(milliseconds: _scrollSpeedMs),
+      (timer) {
+        final textWidth = TextRenderer.getTextWidth(_currentText);
+        setState(() {
+          TextRenderer.drawText(
+            _matrix,
+            _currentText,
+            colorIndex: _selectedColorIndex,
+            startX: _scrollOffset,
+          );
+          _scrollOffset--;
+          // Loop: restart from the right once the text is fully off-screen
+          if (_scrollOffset + textWidth < 0) {
+            _scrollOffset = AppConstants.matrixWidth;
+          }
+        });
+      },
+    );
+  }
+
+  void _stopScrolling() {
+    _scrollTimer?.cancel();
+    _scrollTimer = null;
+    if (_isScrolling) {
+      setState(() => _isScrolling = false);
+    }
   }
 
   void _clearMatrix() {
+    _stopScrolling();
     setState(() {
       _matrix.clear();
     });
   }
 
   Future<void> _openDrawMode() async {
+    _stopScrolling();
     final result = await Navigator.push<List<List<int>>>(
       context,
       MaterialPageRoute(
@@ -84,6 +133,8 @@ class _TextModeScreenState extends State<TextModeScreen> {
           _buildMatrixPreview(),
 
           _buildTextField(),
+
+          if (_isScrolling) _buildScrollingIndicator(),
 
           const SizedBox(height: 12),
 
@@ -140,6 +191,53 @@ class _TextModeScreenState extends State<TextModeScreen> {
           ),
         ),
       ],
+    );
+  }
+
+  Widget _buildScrollingIndicator() {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(
+        AppConstants.defaultPadding,
+        4,
+        AppConstants.defaultPadding,
+        0,
+      ),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+        decoration: BoxDecoration(
+          color: AppConstants.secondaryAccent.withOpacity(0.12),
+          borderRadius: BorderRadius.circular(AppConstants.smallRadius),
+          border: Border.all(
+            color: AppConstants.secondaryAccent.withOpacity(0.45),
+          ),
+        ),
+        child: Row(
+          children: [
+            const Icon(
+              Icons.animation,
+              color: AppConstants.secondaryAccent,
+              size: 15,
+            ),
+            const SizedBox(width: 6),
+            const Text(
+              'Défilement actif',
+              style: TextStyle(
+                color: AppConstants.secondaryAccent,
+                fontSize: 12,
+              ),
+            ),
+            const Spacer(),
+            GestureDetector(
+              onTap: _stopScrolling,
+              child: const Icon(
+                Icons.stop_circle_outlined,
+                color: AppConstants.dangerColor,
+                size: 20,
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 
