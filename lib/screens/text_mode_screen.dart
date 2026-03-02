@@ -30,6 +30,9 @@ class _TextModeScreenState extends State<TextModeScreen> {
   bool _scrollEnabled = false;
   static const int _scrollSpeedMs = 60;
 
+  // Draw scroll
+  List<List<int>>? _scrollSnapshot;
+
   @override
   void initState() {
     super.initState();
@@ -51,6 +54,7 @@ class _TextModeScreenState extends State<TextModeScreen> {
 
     final text = _textController.text;
     _stopScrolling();
+    _scrollSnapshot = null; // abandon le scroll dessin si actif
 
     if (_scrollEnabled) {
       // Scroll mode → start scrolling from the right
@@ -106,10 +110,55 @@ class _TextModeScreenState extends State<TextModeScreen> {
   void _stopScrollingAndReset() {
     _scrollTimer?.cancel();
     _scrollTimer = null;
+    _scrollSnapshot = null;
     setState(() {
       _isScrolling = false;
       _scrollEnabled = false;
     });
+  }
+
+  void _toggleScroll(bool value) {
+    if (value) {
+      // Activer le défilement
+      setState(() => _scrollEnabled = true);
+      if (_matrix.litPixelCount > 0) {
+        _startDrawScroll();
+      }
+    } else {
+      // Désactiver : restaurer le snapshot si dessin
+      final snap = _scrollSnapshot;
+      _stopScrolling();
+      _scrollSnapshot = null;
+      setState(() {
+        _scrollEnabled = false;
+        if (snap != null) {
+          _matrix.updateFrom(snap);
+        }
+      });
+    }
+  }
+
+  void _startDrawScroll() {
+    _scrollSnapshot = _matrix.pixels.map((r) => List<int>.from(r)).toList();
+    int offset = 0;
+    _isScrolling = true;
+    _scrollTimer?.cancel();
+    _scrollTimer = Timer.periodic(
+      const Duration(milliseconds: _scrollSpeedMs),
+      (_) {
+        offset++;
+        final w = AppConstants.matrixWidth;
+        final h = AppConstants.matrixHeight;
+        final snap = _scrollSnapshot!;
+        setState(() {
+          for (int y = 0; y < h; y++) {
+            for (int x = 0; x < w; x++) {
+              _matrix.setPixel(x, y, snap[y][(x + offset) % w]);
+            }
+          }
+        });
+      },
+    );
   }
 
   void _clearMatrix() {
@@ -132,6 +181,10 @@ class _TextModeScreenState extends State<TextModeScreen> {
       setState(() {
         _matrix.updateFrom(result);
       });
+      // Si le défilement est déjà activé, lancer le scroll dessin immédiatement
+      if (_scrollEnabled) {
+        _startDrawScroll();
+      }
     }
 
     SystemChrome.setPreferredOrientations([
@@ -233,7 +286,7 @@ class _TextModeScreenState extends State<TextModeScreen> {
         horizontal: AppConstants.defaultPadding,
       ),
       child: GestureDetector(
-        onTap: () => setState(() => _scrollEnabled = !_scrollEnabled),
+        onTap: () => _toggleScroll(!_scrollEnabled),
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 200),
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
@@ -274,7 +327,7 @@ class _TextModeScreenState extends State<TextModeScreen> {
               const Spacer(),
               Switch(
                 value: _scrollEnabled,
-                onChanged: (v) => setState(() => _scrollEnabled = v),
+                onChanged: _toggleScroll,
                 materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
               ),
             ],

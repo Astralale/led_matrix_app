@@ -172,18 +172,28 @@ class _DrawModeScreenState extends State<DrawModeScreen> {
   Widget _buildClearButton() {
     return SizedBox(
       width: double.infinity,
-      height: 32,
-      child: OutlinedButton(
+      height: 42,
+      child: TextButton(
         onPressed: _clearMatrix,
-        style: OutlinedButton.styleFrom(
+        style: TextButton.styleFrom(
           foregroundColor: AppConstants.dangerColor,
-          side: BorderSide(color: AppConstants.dangerColor.withOpacity(0.4)),
-          padding: EdgeInsets.zero,
+          backgroundColor: AppConstants.dangerColor.withOpacity(0.07),
+          padding: const EdgeInsets.symmetric(horizontal: 4),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(AppConstants.smallRadius),
           ),
         ),
-        child: const Icon(Icons.delete_outline, size: 18),
+        child: const Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.delete_outline, size: 18),
+            SizedBox(height: 2),
+            Text(
+              'Effacer',
+              style: TextStyle(fontSize: 9, fontWeight: FontWeight.w600),
+            ),
+          ],
+        ),
       ),
     );
   }
