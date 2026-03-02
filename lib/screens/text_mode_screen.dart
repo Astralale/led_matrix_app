@@ -119,9 +119,16 @@ class _TextModeScreenState extends State<TextModeScreen> {
 
   void _toggleScroll(bool value) {
     if (value) {
-      // Activer le défilement
       setState(() => _scrollEnabled = true);
-      if (_matrix.litPixelCount > 0) {
+      // Si du texte est saisi, lancer le scroll texte (même si texte trop long)
+      if (_textController.text.isNotEmpty) {
+        _stopScrolling();
+        _scrollSnapshot = null;
+        _currentText = _textController.text;
+        _scrollOffset = AppConstants.matrixWidth;
+        _startScrolling();
+      } else if (_matrix.litPixelCount > 0) {
+        // Sinon, scroller le dessin courant
         _startDrawScroll();
       }
     } else {

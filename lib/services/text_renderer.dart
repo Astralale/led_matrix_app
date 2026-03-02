@@ -63,10 +63,12 @@ class TextRenderer {
         }
       }
 
-      // Arrêter si on dépasse la matrice
+      // Ne pas dessiner les caractères entièrement hors de l'écran à droite
       if (cursorX >= AppConstants.matrixWidth) {
         break;
       }
+      // Ne pas dessiner les caractères entièrement hors de l'écran à gauche
+      // (mais continuer d'avancer le curseur pour les suivants)
     }
   }
 
