@@ -3,9 +3,9 @@ import 'package:flutter/material.dart';
 class AppConstants {
   AppConstants._();
 
-  static const int matrixWidth = 40;
-  static const int matrixHeight = 24;
-  static const int totalLeds = matrixWidth * matrixHeight; // 960
+  static const int matrixWidth = 32;
+  static const int matrixHeight = 16;
+  static const int totalLeds = matrixWidth * matrixHeight; // 512
 
   static const List<Color> colorPalette = [
     Color(0xFF000000), // 0 - Éteint
