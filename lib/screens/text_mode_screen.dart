@@ -27,6 +27,7 @@ class _TextModeScreenState extends State<TextModeScreen> {
   int _scrollOffset = 0;
   String _currentText = '';
   bool _isScrolling = false;
+  bool _scrollEnabled = false;
   static const int _scrollSpeedMs = 60;
 
   @override
@@ -51,8 +52,13 @@ class _TextModeScreenState extends State<TextModeScreen> {
     final text = _textController.text;
     _stopScrolling();
 
-    if (TextRenderer.textFits(text)) {
-      // Text fits → center horizontally
+    if (_scrollEnabled) {
+      // Scroll mode → start scrolling from the right
+      _currentText = text;
+      _scrollOffset = AppConstants.matrixWidth;
+      _startScrolling();
+    } else {
+      // Static mode → center horizontally
       final centeredX =
           (AppConstants.matrixWidth - TextRenderer.getTextWidth(text)) ~/ 2;
       setState(() {
@@ -60,14 +66,9 @@ class _TextModeScreenState extends State<TextModeScreen> {
           _matrix,
           text,
           colorIndex: _selectedColorIndex,
-          startX: centeredX,
+          startX: centeredX.clamp(0, AppConstants.matrixWidth - 1),
         );
       });
-    } else {
-      // Text too long → start scrolling
-      _currentText = text;
-      _scrollOffset = AppConstants.matrixWidth;
-      _startScrolling();
     }
   }
 
@@ -102,15 +103,24 @@ class _TextModeScreenState extends State<TextModeScreen> {
     }
   }
 
+  void _stopScrollingAndReset() {
+    _scrollTimer?.cancel();
+    _scrollTimer = null;
+    setState(() {
+      _isScrolling = false;
+      _scrollEnabled = false;
+    });
+  }
+
   void _clearMatrix() {
-    _stopScrolling();
+    _stopScrollingAndReset();
     setState(() {
       _matrix.clear();
     });
   }
 
   Future<void> _openDrawMode() async {
-    _stopScrolling();
+    _stopScrollingAndReset();
     final result = await Navigator.push<List<List<int>>>(
       context,
       MaterialPageRoute(
@@ -141,13 +151,15 @@ class _TextModeScreenState extends State<TextModeScreen> {
 
           _buildTextField(),
 
-          if (_isScrolling) _buildScrollingIndicator(),
-
           const SizedBox(height: 12),
 
           _buildColorSection(),
 
-          const SizedBox(height: 12),
+          const SizedBox(height: 8),
+
+          _buildScrollToggle(),
+
+          const SizedBox(height: 8),
 
           _buildActionButtons(),
 
@@ -201,48 +213,59 @@ class _TextModeScreenState extends State<TextModeScreen> {
     );
   }
 
-  Widget _buildScrollingIndicator() {
+  Widget _buildScrollToggle() {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(
-        AppConstants.defaultPadding,
-        4,
-        AppConstants.defaultPadding,
-        0,
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppConstants.defaultPadding,
       ),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-        decoration: BoxDecoration(
-          color: AppConstants.secondaryAccent.withOpacity(0.12),
-          borderRadius: BorderRadius.circular(AppConstants.smallRadius),
-          border: Border.all(
-            color: AppConstants.secondaryAccent.withOpacity(0.45),
+      child: GestureDetector(
+        onTap: () => setState(() => _scrollEnabled = !_scrollEnabled),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 200),
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+          decoration: BoxDecoration(
+            color: _scrollEnabled
+                ? AppConstants.secondaryAccent.withOpacity(0.18)
+                : AppConstants.surfaceColor,
+            borderRadius: BorderRadius.circular(AppConstants.defaultRadius),
+            border: Border.all(
+              color: _scrollEnabled
+                  ? AppConstants.secondaryAccent
+                  : AppConstants.borderColor,
+              width: _scrollEnabled ? 1.5 : 1,
+            ),
           ),
-        ),
-        child: Row(
-          children: [
-            const Icon(
-              Icons.animation,
-              color: AppConstants.secondaryAccent,
-              size: 15,
-            ),
-            const SizedBox(width: 6),
-            const Text(
-              'Défilement actif',
-              style: TextStyle(
-                color: AppConstants.secondaryAccent,
-                fontSize: 12,
+          child: Row(
+            children: [
+              Icon(
+                Icons.animation,
+                size: 18,
+                color: _scrollEnabled
+                    ? AppConstants.secondaryAccent
+                    : Colors.white38,
               ),
-            ),
-            const Spacer(),
-            GestureDetector(
-              onTap: _stopScrolling,
-              child: const Icon(
-                Icons.stop_circle_outlined,
-                color: AppConstants.dangerColor,
-                size: 20,
+              const SizedBox(width: 8),
+              Text(
+                'Défilement',
+                style: TextStyle(
+                  fontSize: 13,
+                  color: _scrollEnabled
+                      ? AppConstants.secondaryAccent
+                      : Colors.white54,
+                  fontWeight: _scrollEnabled
+                      ? FontWeight.bold
+                      : FontWeight.normal,
+                ),
               ),
-            ),
-          ],
+              const Spacer(),
+              Switch(
+                value: _scrollEnabled,
+                onChanged: (v) => setState(() => _scrollEnabled = v),
+                activeColor: AppConstants.secondaryAccent,
+                materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+              ),
+            ],
+          ),
         ),
       ),
     );
