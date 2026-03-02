@@ -58,9 +58,7 @@ class _TextModeScreenState extends State<TextModeScreen> {
     final result = await Navigator.push<List<List<int>>>(
       context,
       MaterialPageRoute(
-        builder: (context) => DrawModeScreen(
-          initialMatrix: _matrix.pixels,
-        ),
+        builder: (context) => DrawModeScreen(initialMatrix: _matrix.pixels),
       ),
     );
 
@@ -112,7 +110,10 @@ class _TextModeScreenState extends State<TextModeScreen> {
             padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
               gradient: const LinearGradient(
-                colors: [AppConstants.accentColor, AppConstants.secondaryAccent],
+                colors: [
+                  AppConstants.accentColor,
+                  AppConstants.secondaryAccent,
+                ],
               ),
               borderRadius: BorderRadius.circular(8),
             ),
@@ -154,10 +155,7 @@ class _TextModeScreenState extends State<TextModeScreen> {
         ),
         child: ClipRRect(
           borderRadius: BorderRadius.circular(AppConstants.defaultRadius - 2),
-          child: MatrixPreview(
-            matrix: _matrix,
-            showGlow: false,
-          ),
+          child: MatrixPreview(matrix: _matrix, showGlow: false),
         ),
       ),
     );
@@ -165,7 +163,9 @@ class _TextModeScreenState extends State<TextModeScreen> {
 
   Widget _buildTextField() {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: AppConstants.defaultPadding),
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppConstants.defaultPadding,
+      ),
       child: TextField(
         controller: _textController,
         style: const TextStyle(color: Colors.white, fontSize: 16),
@@ -174,7 +174,10 @@ class _TextModeScreenState extends State<TextModeScreen> {
           hintStyle: TextStyle(color: Colors.grey.shade600),
           filled: true,
           fillColor: AppConstants.surfaceColor,
-          contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+          contentPadding: const EdgeInsets.symmetric(
+            horizontal: 12,
+            vertical: 12,
+          ),
           border: OutlineInputBorder(
             borderRadius: BorderRadius.circular(AppConstants.defaultRadius),
             borderSide: const BorderSide(color: AppConstants.borderColor),
@@ -185,9 +188,16 @@ class _TextModeScreenState extends State<TextModeScreen> {
           ),
           focusedBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(AppConstants.defaultRadius),
-            borderSide: const BorderSide(color: AppConstants.accentColor, width: 2),
+            borderSide: const BorderSide(
+              color: AppConstants.accentColor,
+              width: 2,
+            ),
           ),
-          prefixIcon: const Icon(Icons.text_fields, color: AppConstants.accentColor, size: 20),
+          prefixIcon: const Icon(
+            Icons.text_fields,
+            color: AppConstants.accentColor,
+            size: 20,
+          ),
           suffixIcon: IconButton(
             icon: const Icon(Icons.clear, color: Colors.grey, size: 20),
             onPressed: () => _textController.clear(),
@@ -200,7 +210,9 @@ class _TextModeScreenState extends State<TextModeScreen> {
 
   Widget _buildColorSection() {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: AppConstants.defaultPadding),
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppConstants.defaultPadding,
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -223,7 +235,9 @@ class _TextModeScreenState extends State<TextModeScreen> {
 
   Widget _buildActionButtons() {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: AppConstants.defaultPadding),
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppConstants.defaultPadding,
+      ),
       child: Row(
         children: [
           // Bouton Appliquer
@@ -238,7 +252,9 @@ class _TextModeScreenState extends State<TextModeScreen> {
                 foregroundColor: Colors.black,
                 padding: const EdgeInsets.symmetric(vertical: 12),
                 shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(AppConstants.defaultRadius),
+                  borderRadius: BorderRadius.circular(
+                    AppConstants.defaultRadius,
+                  ),
                 ),
               ),
             ),
@@ -255,7 +271,9 @@ class _TextModeScreenState extends State<TextModeScreen> {
                 side: const BorderSide(color: AppConstants.dangerColor),
                 padding: const EdgeInsets.symmetric(vertical: 12),
                 shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(AppConstants.defaultRadius),
+                  borderRadius: BorderRadius.circular(
+                    AppConstants.defaultRadius,
+                  ),
                 ),
               ),
             ),
@@ -289,7 +307,11 @@ class _TextModeScreenState extends State<TextModeScreen> {
                 color: AppConstants.successColor.withOpacity(0.2),
                 borderRadius: BorderRadius.circular(8),
               ),
-              child: const Icon(Icons.brush, color: AppConstants.successColor, size: 20),
+              child: const Icon(
+                Icons.brush,
+                color: AppConstants.successColor,
+                size: 20,
+              ),
             ),
             const SizedBox(width: 10),
             const Expanded(
@@ -311,7 +333,11 @@ class _TextModeScreenState extends State<TextModeScreen> {
                 ],
               ),
             ),
-            const Icon(Icons.arrow_forward_ios, color: Colors.white38, size: 14),
+            const Icon(
+              Icons.arrow_forward_ios,
+              color: Colors.white38,
+              size: 14,
+            ),
           ],
         ),
       ),

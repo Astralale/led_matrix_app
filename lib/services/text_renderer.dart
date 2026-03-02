@@ -26,12 +26,12 @@ class TextRenderer {
   /// [clearFirst] : effacer la matrice avant de dessiner (défaut: true)
 
   static void drawText(
-      LedMatrix matrix,
-      String text, {
-        int colorIndex = 1,
-        int startX = 1,
-        bool clearFirst = true,
-      }) {
+    LedMatrix matrix,
+    String text, {
+    int colorIndex = 1,
+    int startX = 1,
+    bool clearFirst = true,
+  }) {
     // Effacer si demandé
     if (clearFirst) {
       matrix.clear();
@@ -75,12 +75,12 @@ class TextRenderer {
   // ============================================================================
 
   static void _drawCharacter(
-      LedMatrix matrix,
-      List<List<int>> pattern,
-      int startX,
-      int startY,
-      int colorIndex,
-      ) {
+    LedMatrix matrix,
+    List<List<int>> pattern,
+    int startX,
+    int startY,
+    int colorIndex,
+  ) {
     for (int row = 0; row < pattern.length; row++) {
       for (int col = 0; col < pattern[row].length; col++) {
         if (pattern[row][col] == 1) {

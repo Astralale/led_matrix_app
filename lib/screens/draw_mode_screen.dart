@@ -8,10 +8,7 @@ import '../widgets/color_palette.dart';
 class DrawModeScreen extends StatefulWidget {
   final List<List<int>> initialMatrix;
 
-  const DrawModeScreen({
-    super.key,
-    required this.initialMatrix,
-  });
+  const DrawModeScreen({super.key, required this.initialMatrix});
 
   @override
   State<DrawModeScreen> createState() => _DrawModeScreenState();
@@ -55,9 +52,7 @@ class _DrawModeScreenState extends State<DrawModeScreen> {
           children: [
             _buildControlPanel(),
 
-            Expanded(
-              child: _buildDrawingArea(),
-            ),
+            Expanded(child: _buildDrawingArea()),
           ],
         ),
       ),
@@ -152,7 +147,9 @@ class _DrawModeScreenState extends State<DrawModeScreen> {
           color: isSelected ? AppConstants.accentColor : Colors.transparent,
           borderRadius: BorderRadius.circular(AppConstants.smallRadius),
           border: Border.all(
-            color: isSelected ? AppConstants.accentColor : AppConstants.borderColor,
+            color: isSelected
+                ? AppConstants.accentColor
+                : AppConstants.borderColor,
           ),
         ),
         child: Row(
@@ -205,7 +202,8 @@ class _DrawModeScreenState extends State<DrawModeScreen> {
         borderRadius: BorderRadius.circular(AppConstants.defaultRadius - 2),
         child: InteractiveMatrixPreview(
           matrix: _matrix,
-          selectedColorIndex: _selectedColorIndex % 10, // Limiter à 0-9 pour ESP32
+          selectedColorIndex:
+              _selectedColorIndex % 10, // Limiter à 0-9 pour ESP32
           isDrawMode: _isDrawMode,
           onMatrixChanged: () => setState(() {}),
         ),

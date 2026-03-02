@@ -32,9 +32,7 @@ class MatrixPreview extends StatelessWidget {
         final cellMargin = calculatedCellSize * 0.04;
         final actualCellSize = calculatedCellSize - (cellMargin * 2);
 
-        return Center(
-          child: _buildGrid(actualCellSize, cellMargin),
-        );
+        return Center(child: _buildGrid(actualCellSize, cellMargin));
       },
     );
   }
@@ -95,22 +93,19 @@ class MatrixPreview extends StatelessWidget {
         borderRadius: BorderRadius.circular(cellSize * 0.15),
         boxShadow: (isLit && showGlow)
             ? [
-          BoxShadow(
-            color: color.withOpacity(0.5),
-            blurRadius: cellSize * 0.3,
-            spreadRadius: 0,
-          ),
-        ]
+                BoxShadow(
+                  color: color.withOpacity(0.5),
+                  blurRadius: cellSize * 0.3,
+                  spreadRadius: 0,
+                ),
+              ]
             : null,
       ),
     );
 
     // Si on a un callback, rendre la cellule interactive
     if (onPixelTap != null) {
-      return GestureDetector(
-        onTap: () => onPixelTap!(x, y),
-        child: cell,
-      );
+      return GestureDetector(onTap: () => onPixelTap!(x, y), child: cell);
     }
 
     return cell;
@@ -118,7 +113,7 @@ class MatrixPreview extends StatelessWidget {
 }
 
 // ============================================================================
-// 🎨 WIDGET INTERACTIF POUR LE DESSIN
+// WIDGET INTERACTIF POUR LE DESSIN
 // ============================================================================
 // Version spéciale avec support du drag pour dessiner
 
@@ -137,20 +132,27 @@ class InteractiveMatrixPreview extends StatefulWidget {
   });
 
   @override
-  State<InteractiveMatrixPreview> createState() => _InteractiveMatrixPreviewState();
+  State<InteractiveMatrixPreview> createState() =>
+      _InteractiveMatrixPreviewState();
 }
 
 class _InteractiveMatrixPreviewState extends State<InteractiveMatrixPreview> {
   bool _isDrawing = false;
 
-  void _handleInteraction(Offset localPosition, double cellSize, double cellMargin) {
+  void _handleInteraction(
+    Offset localPosition,
+    double cellSize,
+    double cellMargin,
+  ) {
     double totalCellSize = cellSize + (cellMargin * 2);
 
     int x = (localPosition.dx / totalCellSize).floor();
     int y = (localPosition.dy / totalCellSize).floor();
 
-    if (x >= 0 && x < AppConstants.matrixWidth &&
-        y >= 0 && y < AppConstants.matrixHeight) {
+    if (x >= 0 &&
+        x < AppConstants.matrixWidth &&
+        y >= 0 &&
+        y < AppConstants.matrixHeight) {
       int colorToSet = widget.isDrawMode ? widget.selectedColorIndex : 0;
 
       if (widget.matrix.getPixel(x, y) != colorToSet) {
@@ -175,21 +177,35 @@ class _InteractiveMatrixPreviewState extends State<InteractiveMatrixPreview> {
         double cellMargin = cellSize * 0.04;
         double actualCellSize = cellSize - (cellMargin * 2);
 
-        double totalWidth = AppConstants.matrixWidth * (actualCellSize + cellMargin * 2);
-        double totalHeight = AppConstants.matrixHeight * (actualCellSize + cellMargin * 2);
+        double totalWidth =
+            AppConstants.matrixWidth * (actualCellSize + cellMargin * 2);
+        double totalHeight =
+            AppConstants.matrixHeight * (actualCellSize + cellMargin * 2);
 
         return Center(
           child: GestureDetector(
             onTapDown: (details) {
-              _handleInteraction(details.localPosition, actualCellSize, cellMargin);
+              _handleInteraction(
+                details.localPosition,
+                actualCellSize,
+                cellMargin,
+              );
             },
             onPanStart: (details) {
               _isDrawing = true;
-              _handleInteraction(details.localPosition, actualCellSize, cellMargin);
+              _handleInteraction(
+                details.localPosition,
+                actualCellSize,
+                cellMargin,
+              );
             },
             onPanUpdate: (details) {
               if (_isDrawing) {
-                _handleInteraction(details.localPosition, actualCellSize, cellMargin);
+                _handleInteraction(
+                  details.localPosition,
+                  actualCellSize,
+                  cellMargin,
+                );
               }
             },
             onPanEnd: (_) => _isDrawing = false,
@@ -235,11 +251,11 @@ class _InteractiveMatrixPreviewState extends State<InteractiveMatrixPreview> {
         borderRadius: BorderRadius.circular(cellSize * 0.15),
         boxShadow: isLit
             ? [
-          BoxShadow(
-            color: color.withOpacity(0.5),
-            blurRadius: cellSize * 0.3,
-          ),
-        ]
+                BoxShadow(
+                  color: color.withOpacity(0.5),
+                  blurRadius: cellSize * 0.3,
+                ),
+              ]
             : null,
       ),
     );

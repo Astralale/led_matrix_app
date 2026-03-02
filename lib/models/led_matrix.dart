@@ -1,35 +1,25 @@
 import '../config/constants.dart';
 
 class LedMatrix {
-
   List<List<int>> _pixels;
-
 
   final int width;
   final int height;
-
 
   LedMatrix({
     this.width = AppConstants.matrixWidth,
     this.height = AppConstants.matrixHeight,
   }) : _pixels = _createEmptyMatrix(width, height);
 
-
   LedMatrix.fromPixels(this._pixels)
-      : width = _pixels.isNotEmpty ? _pixels[0].length : AppConstants.matrixWidth,
-        height = _pixels.length;
-
+    : width = _pixels.isNotEmpty ? _pixels[0].length : AppConstants.matrixWidth,
+      height = _pixels.length;
 
   static List<List<int>> _createEmptyMatrix(int width, int height) {
-    return List.generate(
-      height,
-          (_) => List.generate(width, (_) => 0),
-    );
+    return List.generate(height, (_) => List.generate(width, (_) => 0));
   }
 
-
   List<List<int>> get pixels => _pixels;
-
 
   int getPixel(int x, int y) {
     if (_isValidPosition(x, y)) {
@@ -37,7 +27,6 @@ class LedMatrix {
     }
     return 0;
   }
-
 
   int get litPixelCount {
     int count = 0;
@@ -49,8 +38,6 @@ class LedMatrix {
     return count;
   }
 
-
-
   void setPixel(int x, int y, int colorIndex) {
     if (_isValidPosition(x, y)) {
       _pixels[y][x] = colorIndex.clamp(0, 9);
@@ -61,7 +48,6 @@ class LedMatrix {
     _pixels = _createEmptyMatrix(width, height);
   }
 
-
   void fill(int colorIndex) {
     for (int y = 0; y < height; y++) {
       for (int x = 0; x < width; x++) {
@@ -70,15 +56,14 @@ class LedMatrix {
     }
   }
 
-
-
   bool _isValidPosition(int x, int y) {
     return x >= 0 && x < width && y >= 0 && y < height;
   }
 
-
   LedMatrix copy() {
-    List<List<int>> copiedPixels = _pixels.map((row) => List<int>.from(row)).toList();
+    List<List<int>> copiedPixels = _pixels
+        .map((row) => List<int>.from(row))
+        .toList();
     return LedMatrix.fromPixels(copiedPixels);
   }
 

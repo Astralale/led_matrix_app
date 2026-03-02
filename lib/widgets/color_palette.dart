@@ -54,12 +54,13 @@ class HorizontalColorPalette extends StatelessWidget {
                 ),
                 boxShadow: isSelected && colorIndex != 0
                     ? [
-                  BoxShadow(
-                    color: AppConstants.colorPalette[colorIndex].withOpacity(0.5),
-                    blurRadius: 6,
-                    spreadRadius: 1,
-                  ),
-                ]
+                        BoxShadow(
+                          color: AppConstants.colorPalette[colorIndex]
+                              .withOpacity(0.5),
+                          blurRadius: 6,
+                          spreadRadius: 1,
+                        ),
+                      ]
                     : null,
               ),
               child: _buildCellContent(colorIndex, isSelected),
@@ -133,16 +134,14 @@ class GridColorPalette extends StatelessWidget {
               ),
               boxShadow: isSelected && index != 0
                   ? [
-                BoxShadow(
-                  color: palette[index].withOpacity(0.5),
-                  blurRadius: 4,
-                ),
-              ]
+                      BoxShadow(
+                        color: palette[index].withOpacity(0.5),
+                        blurRadius: 4,
+                      ),
+                    ]
                   : null,
             ),
-            child: Center(
-              child: _buildCellContent(index, isSelected),
-            ),
+            child: Center(child: _buildCellContent(index, isSelected)),
           ),
         );
       },
@@ -151,11 +150,7 @@ class GridColorPalette extends StatelessWidget {
 
   Widget? _buildCellContent(int index, bool isSelected) {
     if (index == 0) {
-      return Icon(
-        Icons.not_interested,
-        color: Colors.grey.shade600,
-        size: 12,
-      );
+      return Icon(Icons.not_interested, color: Colors.grey.shade600, size: 12);
     }
     if (isSelected) {
       return Icon(
