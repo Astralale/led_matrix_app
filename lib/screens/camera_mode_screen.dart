@@ -5,6 +5,8 @@ import 'package:flutter_mjpeg/flutter_mjpeg.dart';
 import '../config/constants.dart';
 import '../services/esp32_cam_service.dart';
 import '../services/mjpeg_recorder.dart';
+import '../services/notification_service.dart';
+import '../widgets/ble_status_indicator.dart';
 
 class CameraModeScreen extends StatefulWidget {
   const CameraModeScreen({super.key});
@@ -67,40 +69,24 @@ class _CameraModeScreenState extends State<CameraModeScreen> {
       setState(() => _isRecording = false);
       final id = await _recorder.stop();
       if (!mounted) return;
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            id != null
-                ? "Vidéo enregistrée dans la galerie."
-                : "Enregistrement arrêté (non sauvegardé).",
-          ),
-          backgroundColor: id != null
-              ? AppConstants.successColor
-              : AppConstants.dangerColor,
-        ),
-      );
+      if (id != null) {
+        NotificationService.showSuccess('Vidéo enregistrée dans la galerie.');
+      } else {
+        NotificationService.showWarning(
+          'Enregistrement arrêté (non sauvegardé).',
+        );
+      }
     } else {
       // START
       try {
         await _recorder.start();
         if (!mounted) return;
         setState(() => _isRecording = true);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: const Text("Enregistrement démarré…"),
-            backgroundColor: AppConstants.accentColor,
-          ),
-        );
+        NotificationService.showInfo('Enregistrement démarré…');
       } catch (_) {
         if (!mounted) return;
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: const Text(
-              "Impossible de démarrer l’enregistrement (stream non accessible).",
-            ),
-            backgroundColor: AppConstants.dangerColor,
-          ),
+        NotificationService.showError(
+          "Impossible de démarrer l'enregistrement (stream non accessible).",
         );
       }
     }
@@ -111,13 +97,8 @@ class _CameraModeScreenState extends State<CameraModeScreen> {
       await _cam.setVar(varName, value);
     } catch (_) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: const Text(
-            "Échec envoi réglage caméra (ESP32 non joignable ?)",
-          ),
-          backgroundColor: AppConstants.dangerColor,
-        ),
+      NotificationService.showError(
+        'Échec envoi réglage caméra (ESP32 non joignable ?)',
       );
     }
   }
@@ -131,12 +112,7 @@ class _CameraModeScreenState extends State<CameraModeScreen> {
       setState(() => _lastStill = bytes);
     } catch (_) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: const Text("Capture impossible (/capture)"),
-          backgroundColor: AppConstants.dangerColor,
-        ),
-      );
+      NotificationService.showError('Capture impossible (/capture)');
     } finally {
       if (mounted) setState(() => _loadingStill = false);
     }
@@ -192,6 +168,10 @@ class _CameraModeScreenState extends State<CameraModeScreen> {
         ],
       ),
       actions: [
+        const Padding(
+          padding: EdgeInsets.only(right: 4),
+          child: BleStatusIndicator(),
+        ),
         Padding(
           padding: const EdgeInsets.only(right: 8),
           child: ElevatedButton(

@@ -1,16 +1,11 @@
-import 'dart:async';
-
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:led_matrix_app/screens/camera_mode_screen.dart';
 
 import '../config/constants.dart';
-import '../models/led_matrix.dart';
-import '../services/ble_service.dart';
-import '../services/storage_service.dart';
-import '../widgets/color_palette.dart';
-import '../services/text_renderer.dart';
+import '../services/text_mode_controller.dart';
 import '../widgets/ble_status_indicator.dart';
+import '../widgets/color_palette.dart';
 import '../widgets/matrix_preview.dart';
 import 'draw_mode_screen.dart';
 import 'settings_screen.dart';
@@ -23,268 +18,63 @@ class TextModeScreen extends StatefulWidget {
 }
 
 class _TextModeScreenState extends State<TextModeScreen> {
-  final LedMatrix _matrix = LedMatrix();
-
+  late final TextModeController _controller;
   final TextEditingController _textController = TextEditingController();
-
-  int _selectedColorIndex = 1;
-
-  // Scroll animation
-  Timer? _scrollTimer;
-  int _scrollOffset = 0;
-  String _currentText = '';
-  bool _isScrolling = false;
-  bool _scrollEnabled = false;
-  int _scrollSpeedMs = 60;
-
-  // Draw scroll
-  List<List<int>>? _scrollSnapshot;
-
-  // Blink animation
-  Timer? _blinkTimer;
-  bool _blinkEnabled = false;
-  bool _blinkVisible = true;
-  List<List<int>>? _blinkSnapshot;
-  int _blinkIntervalMs = 500;
-
-  String _emergencyMessage = 'HELP';
-  int _brightness = 60;
 
   @override
   void initState() {
     super.initState();
+    _controller = TextModeController();
+    _controller.addListener(_onControllerChanged);
     SystemChrome.setPreferredOrientations([
       DeviceOrientation.portraitUp,
       DeviceOrientation.portraitDown,
     ]);
-    _loadSettings();
   }
 
-  /// Charge les paramètres persistés.
-  void _loadSettings() {
-    final storage = StorageService.instance;
-    _emergencyMessage = storage.emergencyMessage;
-    _scrollSpeedMs = storage.scrollSpeedMs;
-    _blinkIntervalMs = storage.blinkIntervalMs;
-    _brightness = storage.brightness;
-    _selectedColorIndex = storage.selectedColorIndex;
+  void _onControllerChanged() {
+    if (mounted) setState(() {});
   }
 
   @override
   void dispose() {
-    _scrollTimer?.cancel();
-    _blinkTimer?.cancel();
+    _controller.removeListener(_onControllerChanged);
+    _controller.dispose();
     _textController.dispose();
     super.dispose();
   }
 
-  void _sendCurrentMatrix() {
-    BleService.instance.sendMatrix(_matrix.pixels);
-  }
-
   void _applyText() {
-    if (_textController.text.isEmpty) return;
-
-    final text = _textController.text;
-    _stopScrolling();
-    _scrollSnapshot = null; // abandon le scroll dessin si actif
-
-    if (_scrollEnabled) {
-      // Scroll mode → start scrolling from the right
-      _currentText = text;
-      _scrollOffset = AppConstants.matrixWidth;
-      _startScrolling();
-    } else {
-      // Static mode → center horizontally
-      final centeredX =
-          (AppConstants.matrixWidth - TextRenderer.getTextWidth(text)) ~/ 2;
-      setState(() {
-        TextRenderer.drawText(
-          _matrix,
-          text,
-          colorIndex: _selectedColorIndex,
-          startX: centeredX.clamp(0, AppConstants.matrixWidth - 1),
-        );
-      });
-      _sendCurrentMatrix();
-    }
-  }
-
-  void _startScrolling() {
-    _isScrolling = true;
-    _scrollTimer = Timer.periodic(Duration(milliseconds: _scrollSpeedMs), (
-      timer,
-    ) {
-      // If blink is hiding the display, skip this tick
-      if (_blinkEnabled && !_blinkVisible) return;
-      final textWidth = TextRenderer.getTextWidth(_currentText);
-      setState(() {
-        TextRenderer.drawText(
-          _matrix,
-          _currentText,
-          colorIndex: _selectedColorIndex,
-          startX: _scrollOffset,
-        );
-        _scrollOffset--;
-        // Loop: restart from the right once the text is fully off-screen
-        if (_scrollOffset + textWidth < 0) {
-          _scrollOffset = AppConstants.matrixWidth;
-        }
-      });
-      _sendCurrentMatrix();
-    });
-  }
-
-  void _stopScrolling() {
-    _scrollTimer?.cancel();
-    _scrollTimer = null;
-    if (_isScrolling) {
-      setState(() => _isScrolling = false);
-    }
-  }
-
-  void _stopScrollingAndReset() {
-    _scrollTimer?.cancel();
-    _scrollTimer = null;
-    _scrollSnapshot = null;
-    setState(() {
-      _isScrolling = false;
-      _scrollEnabled = false;
-    });
-  }
-
-  void _toggleScroll(bool value) {
-    if (value) {
-      setState(() => _scrollEnabled = true);
-      if (_matrix.litPixelCount > 0) {
-        // Des pixels sont allumés (dessin ou texte déjà appliqué) → scroller la matrice
-        _startDrawScroll();
-      } else if (_textController.text.isNotEmpty) {
-        // Matrice vide mais texte saisi → scroller le texte
-        _stopScrolling();
-        _scrollSnapshot = null;
-        _currentText = _textController.text;
-        _scrollOffset = AppConstants.matrixWidth;
-        _startScrolling();
-      }
-      // If blink was already active in static mode, switch it to scroll mode
-      if (_blinkEnabled) {
-        _blinkSnapshot = null;
-        _blinkTimer?.cancel();
-        _blinkVisible = true;
-        _blinkTimer = Timer.periodic(Duration(milliseconds: _blinkIntervalMs), (
-          _,
-        ) {
-          setState(() {
-            _blinkVisible = !_blinkVisible;
-            if (!_blinkVisible) {
-              _matrix.clear();
-              _sendCurrentMatrix();
-            }
-          });
-        });
-      }
-    } else {
-      // Désactiver : restaurer le snapshot si dessin
-      final snap = _scrollSnapshot;
-      _stopScrolling();
-      _scrollSnapshot = null;
-      setState(() {
-        _scrollEnabled = false;
-        if (snap != null) {
-          _matrix.updateFrom(snap);
-        }
-      });
-      // If blink is still active, switch back to snapshot mode
-      if (_blinkEnabled) {
-        _blinkTimer?.cancel();
-        _blinkVisible = true;
-        _blinkSnapshot = _matrix.pixels.map((r) => List<int>.from(r)).toList();
-        _blinkTimer = Timer.periodic(Duration(milliseconds: _blinkIntervalMs), (
-          _,
-        ) {
-          setState(() {
-            _blinkVisible = !_blinkVisible;
-            if (_blinkVisible) {
-              _matrix.updateFrom(
-                _blinkSnapshot!.map((r) => List<int>.from(r)).toList(),
-              );
-            } else {
-              _matrix.clear();
-            }
-          });
-          _sendCurrentMatrix();
-        });
-      }
-    }
-  }
-
-  void _startDrawScroll() {
-    _scrollSnapshot = _matrix.pixels.map((r) => List<int>.from(r)).toList();
-    int offset = 0;
-    _isScrolling = true;
-    _scrollTimer?.cancel();
-    _scrollTimer = Timer.periodic(Duration(milliseconds: _scrollSpeedMs), (_) {
-      // If blink is hiding the display, skip this tick
-      if (_blinkEnabled && !_blinkVisible) return;
-      offset++;
-      final w = AppConstants.matrixWidth;
-      final h = AppConstants.matrixHeight;
-      final snap = _scrollSnapshot!;
-      setState(() {
-        for (int y = 0; y < h; y++) {
-          for (int x = 0; x < w; x++) {
-            _matrix.setPixel(x, y, snap[y][(x + offset) % w]);
-          }
-        }
-      });
-      _sendCurrentMatrix();
-    });
-  }
-
-  void _clearMatrix() {
-    _stopScrollingAndReset();
-    _stopBlinking();
-    setState(() {
-      _matrix.clear();
-    });
-    _sendCurrentMatrix();
+    _controller.applyText(_textController.text);
   }
 
   void _displayHelp() {
-    _stopScrollingAndReset();
-    _stopBlinking();
-    _textController.text = _emergencyMessage.toLowerCase();
-    const helpColor = 1;
-    final text = _emergencyMessage.toUpperCase();
-    final textWidth = TextRenderer.getTextWidth(text);
+    _textController.text = _controller.emergencyMessage.toLowerCase();
+    _controller.displayHelp();
+  }
 
-    if (textWidth > AppConstants.matrixWidth) {
-      // Text too wide → auto-scroll
-      setState(() {
-        _selectedColorIndex = helpColor;
-        _scrollEnabled = true;
-        _currentText = text;
-        _scrollOffset = AppConstants.matrixWidth;
-      });
-      _startScrolling();
-    } else {
-      final centeredX = (AppConstants.matrixWidth - textWidth) ~/ 2;
-      setState(() {
-        _matrix.clear();
-        TextRenderer.drawText(
-          _matrix,
-          text,
-          colorIndex: helpColor,
-          startX: centeredX.clamp(0, AppConstants.matrixWidth - 1),
-        );
-      });
-      _sendCurrentMatrix();
+  Future<void> _openDrawMode() async {
+    _controller.toggleScroll(false);
+    final result = await Navigator.push<List<List<int>>>(
+      context,
+      MaterialPageRoute(
+        builder: (context) =>
+            DrawModeScreen(initialMatrix: _controller.matrix.pixels),
+      ),
+    );
+
+    if (result != null) {
+      _controller.updateFromDrawResult(result);
     }
+
+    SystemChrome.setPreferredOrientations([
+      DeviceOrientation.portraitUp,
+      DeviceOrientation.portraitDown,
+    ]);
   }
 
   Future<void> _openCameraView() async {
-    await Navigator.push<Map<String, dynamic>>(
+    await Navigator.push<void>(
       context,
       MaterialPageRoute(builder: (context) => CameraModeScreen()),
     );
@@ -295,179 +85,22 @@ class _TextModeScreenState extends State<TextModeScreen> {
       context,
       MaterialPageRoute(
         builder: (context) => SettingsScreen(
-          emergencyMessage: _emergencyMessage,
-          scrollSpeedMs: _scrollSpeedMs,
-          blinkIntervalMs: _blinkIntervalMs,
-          brightness: _brightness,
+          emergencyMessage: _controller.emergencyMessage,
+          scrollSpeedMs: _controller.scrollSpeedMs,
+          blinkIntervalMs: _controller.blinkIntervalMs,
+          brightness: _controller.brightness,
         ),
       ),
     );
 
     if (result != null) {
-      final storage = StorageService.instance;
-      setState(() {
-        final msg = result['emergencyMessage'] as String?;
-        if (msg != null && msg.isNotEmpty) {
-          _emergencyMessage = msg.toUpperCase();
-          storage.emergencyMessage = _emergencyMessage;
-        }
-        final speed = result['scrollSpeedMs'] as int?;
-        if (speed != null) {
-          _scrollSpeedMs = speed;
-          storage.scrollSpeedMs = speed;
-          if (_isScrolling) {
-            _restartActiveScroll();
-          }
-        }
-        final blinkInterval = result['blinkIntervalMs'] as int?;
-        if (blinkInterval != null) {
-          _blinkIntervalMs = blinkInterval;
-          storage.blinkIntervalMs = blinkInterval;
-          if (_blinkEnabled) {
-            _restartActiveBlink();
-          }
-        }
-        final brightness = result['brightness'] as int?;
-        if (brightness != null) {
-          _brightness = brightness;
-          storage.brightness = brightness;
-        }
-      });
+      _controller.updateSettings(
+        emergencyMessage: result['emergencyMessage'] as String?,
+        scrollSpeedMs: result['scrollSpeedMs'] as int?,
+        blinkIntervalMs: result['blinkIntervalMs'] as int?,
+        brightness: result['brightness'] as int?,
+      );
     }
-  }
-
-  void _restartActiveScroll() {
-    if (_scrollSnapshot != null) {
-      _stopScrolling();
-      _startDrawScroll();
-    } else if (_currentText.isNotEmpty) {
-      _stopScrolling();
-      _startScrolling();
-    }
-  }
-
-  void _restartActiveBlink() {
-    _blinkTimer?.cancel();
-    _blinkVisible = true;
-    if (_isScrolling) {
-      _blinkTimer = Timer.periodic(Duration(milliseconds: _blinkIntervalMs), (
-        _,
-      ) {
-        setState(() {
-          _blinkVisible = !_blinkVisible;
-          if (!_blinkVisible) {
-            _matrix.clear();
-            _sendCurrentMatrix();
-          }
-        });
-      });
-    } else {
-      _blinkSnapshot = _matrix.pixels.map((r) => List<int>.from(r)).toList();
-      _blinkTimer = Timer.periodic(Duration(milliseconds: _blinkIntervalMs), (
-        _,
-      ) {
-        setState(() {
-          _blinkVisible = !_blinkVisible;
-          if (_blinkVisible) {
-            _matrix.updateFrom(
-              _blinkSnapshot!.map((r) => List<int>.from(r)).toList(),
-            );
-          } else {
-            _matrix.clear();
-          }
-        });
-        _sendCurrentMatrix();
-      });
-    }
-  }
-
-  void _toggleBlink(bool value) {
-    if (value) {
-      _blinkVisible = true;
-      setState(() => _blinkEnabled = true);
-      _blinkTimer?.cancel();
-      if (_isScrolling) {
-        // While scrolling: blink by toggling visibility, scroll timer handles display
-        _blinkTimer = Timer.periodic(Duration(milliseconds: _blinkIntervalMs), (
-          _,
-        ) {
-          setState(() {
-            _blinkVisible = !_blinkVisible;
-            if (!_blinkVisible) {
-              _matrix.clear();
-              _sendCurrentMatrix();
-            }
-            // When _blinkVisible becomes true again, the scroll timer
-            // will resume drawing on its next tick automatically
-          });
-        });
-      } else {
-        // Static display: use snapshot approach
-        _blinkSnapshot = _matrix.pixels.map((r) => List<int>.from(r)).toList();
-        _blinkTimer = Timer.periodic(Duration(milliseconds: _blinkIntervalMs), (
-          _,
-        ) {
-          setState(() {
-            _blinkVisible = !_blinkVisible;
-            if (_blinkVisible) {
-              _matrix.updateFrom(
-                _blinkSnapshot!.map((r) => List<int>.from(r)).toList(),
-              );
-            } else {
-              _matrix.clear();
-            }
-          });
-          _sendCurrentMatrix();
-        });
-      }
-    } else {
-      _stopBlinking();
-      if (!_isScrolling && _blinkSnapshot != null) {
-        setState(() {
-          _matrix.updateFrom(_blinkSnapshot!);
-        });
-        _sendCurrentMatrix();
-      }
-      _blinkSnapshot = null;
-    }
-  }
-
-  void _stopBlinking() {
-    _blinkTimer?.cancel();
-    _blinkTimer = null;
-    if (_blinkEnabled) {
-      setState(() {
-        _blinkEnabled = false;
-        _blinkVisible = true;
-      });
-    }
-  }
-
-  Future<void> _openDrawMode() async {
-    _stopScrollingAndReset();
-    final result = await Navigator.push<List<List<int>>>(
-      context,
-      MaterialPageRoute(
-        builder: (context) => DrawModeScreen(initialMatrix: _matrix.pixels),
-      ),
-    );
-
-    if (result != null) {
-      setState(() {
-        _matrix.updateFrom(result);
-      });
-      // Si le défilement est déjà activé, lancer le scroll dessin immédiatement
-      if (_scrollEnabled) {
-        _startDrawScroll();
-      } else {
-        _sendCurrentMatrix();
-      }
-    }
-
-    SystemChrome.setPreferredOrientations([
-      DeviceOrientation.portraitUp,
-      DeviceOrientation.portraitDown,
-    ]);
   }
 
   @override
@@ -603,8 +236,11 @@ class _TextModeScreenState extends State<TextModeScreen> {
             child: _buildEffectButton(
               icon: Icons.animation,
               label: 'Défilement',
-              isActive: _scrollEnabled,
-              onTap: () => _toggleScroll(!_scrollEnabled),
+              isActive: _controller.scrollEnabled,
+              onTap: () => _controller.toggleScroll(
+                !_controller.scrollEnabled,
+                pendingText: _textController.text,
+              ),
             ),
           ),
           const SizedBox(width: 8),
@@ -612,8 +248,8 @@ class _TextModeScreenState extends State<TextModeScreen> {
             child: _buildEffectButton(
               icon: Icons.flash_on,
               label: 'Clignotement',
-              isActive: _blinkEnabled,
-              onTap: () => _toggleBlink(!_blinkEnabled),
+              isActive: _controller.blinkEnabled,
+              onTap: () => _controller.toggleBlink(!_controller.blinkEnabled),
             ),
           ),
         ],
@@ -708,7 +344,12 @@ class _TextModeScreenState extends State<TextModeScreen> {
           child: Column(
             children: [
               _buildPanelHeader(),
-              Expanded(child: MatrixPreview(matrix: _matrix, showGlow: true)),
+              Expanded(
+                child: MatrixPreview(
+                  matrix: _controller.matrix,
+                  showGlow: true,
+                ),
+              ),
             ],
           ),
         ),
@@ -792,11 +433,8 @@ class _TextModeScreenState extends State<TextModeScreen> {
           ),
           const SizedBox(height: 6),
           HorizontalColorPalette(
-            selectedColorIndex: _selectedColorIndex,
-            onColorSelected: (index) {
-              setState(() => _selectedColorIndex = index);
-              StorageService.instance.selectedColorIndex = index;
-            },
+            selectedColorIndex: _controller.selectedColorIndex,
+            onColorSelected: _controller.setSelectedColor,
             availableColors: AppConstants.textModeColors,
           ),
         ],
@@ -813,7 +451,6 @@ class _TextModeScreenState extends State<TextModeScreen> {
       ),
       child: Row(
         children: [
-          // Bouton Appliquer avec dégradé
           Expanded(
             flex: 2,
             child: SizedBox(
@@ -839,12 +476,11 @@ class _TextModeScreenState extends State<TextModeScreen> {
             ),
           ),
           const SizedBox(width: 8),
-          // Bouton Effacer
           Expanded(
             child: SizedBox(
               height: 46,
               child: OutlinedButton.icon(
-                onPressed: _clearMatrix,
+                onPressed: _controller.clearMatrix,
                 icon: const Icon(Icons.delete_outline, size: 18),
                 label: const Text('Effacer', style: TextStyle(fontSize: 14)),
                 style: OutlinedButton.styleFrom(

@@ -60,10 +60,10 @@ class _BleStatusIndicatorState extends State<BleStatusIndicator> {
         : 'Déconnecté';
 
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
       decoration: BoxDecoration(
         color: color.withValues(alpha: 0.10),
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(AppConstants.defaultRadius),
         border: Border.all(color: color.withValues(alpha: 0.25)),
       ),
       child: Row(
@@ -71,8 +71,8 @@ class _BleStatusIndicatorState extends State<BleStatusIndicator> {
         children: [
           if (connecting)
             SizedBox(
-              width: 12,
-              height: 12,
+              width: 14,
+              height: 14,
               child: CircularProgressIndicator(strokeWidth: 1.5, color: color),
             )
           else
@@ -85,11 +85,11 @@ class _BleStatusIndicatorState extends State<BleStatusIndicator> {
               size: 14,
               color: color,
             ),
-          const SizedBox(width: 4),
+          const SizedBox(width: 5),
           Text(
             label,
             style: TextStyle(
-              fontSize: 11,
+              fontSize: 12,
               fontWeight: FontWeight.w600,
               color: color,
             ),

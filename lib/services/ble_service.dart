@@ -119,12 +119,12 @@ class BleService {
       await scanSub.cancel();
 
       await _doConnect(device);
-    } on Exception catch (e) {
+    } on Exception catch (_) {
       await FlutterBluePlus.stopScan();
       _characteristic = null;
       _device = null;
       _setState(BleConnectionState.error);
-      NotificationService.showError('Connexion échouée : $e');
+      NotificationService.showError('Connexion échouée');
       rethrow;
     }
   }
@@ -138,11 +138,11 @@ class BleService {
     _setState(BleConnectionState.connecting);
     try {
       await _doConnect(device);
-    } on Exception catch (e) {
+    } on Exception catch (_) {
       _characteristic = null;
       _device = null;
       _setState(BleConnectionState.error);
-      NotificationService.showError('Connexion échouée : $e');
+      NotificationService.showError('Connexion échouée');
       rethrow;
     }
   }
@@ -214,7 +214,7 @@ class BleService {
           _setState(BleConnectionState.disconnected);
         } else {
           _setState(BleConnectionState.disconnected);
-          NotificationService.showError('Connexion BLE perdue');
+          NotificationService.showWarning('Connexion BLE perdue');
           _attemptReconnect();
         }
       }
@@ -245,7 +245,7 @@ class BleService {
       'Tentative de reconnexion $_reconnectAttempts/$_maxReconnectAttempts '
       'dans ${delay.inSeconds}s...',
     );
-    NotificationService.showInfo(
+    NotificationService.showWarning(
       'Reconnexion $_reconnectAttempts/$_maxReconnectAttempts...',
     );
 

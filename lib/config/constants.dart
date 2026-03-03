@@ -50,6 +50,7 @@ class AppConstants {
   static const Color accentColor = Color(0xFF620505);
   static const Color secondaryAccent = Color(0xFF9B2020);
   static const Color dangerColor = Color(0xFFB33030);
+  static const Color warningColor = Color(0xFFB36800);
   static const Color successColor = Color(0xFF2E6B2E);
 
   static const double defaultPadding = 12.0;

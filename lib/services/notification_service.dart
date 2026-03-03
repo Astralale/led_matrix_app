@@ -67,6 +67,15 @@ class NotificationService {
     );
   }
 
+  static void showWarning(String message) {
+    _show(
+      message,
+      backgroundColor: AppConstants.warningColor,
+      icon: Icons.warning_amber_outlined,
+      duration: const Duration(seconds: 3),
+    );
+  }
+
   static void showError(String message) {
     _show(
       message,

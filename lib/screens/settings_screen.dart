@@ -11,6 +11,7 @@ import 'package:flutter_blue_plus/flutter_blue_plus.dart';
 import '../config/constants.dart';
 import '../services/ble_service.dart';
 import '../services/storage_service.dart';
+import '../widgets/ble_status_indicator.dart';
 
 class SettingsScreen extends StatefulWidget {
   final String emergencyMessage;
@@ -257,6 +258,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
           letterSpacing: 0.5,
         ),
       ),
+      actions: const [
+        Padding(
+          padding: EdgeInsets.only(right: 12),
+          child: BleStatusIndicator(),
+        ),
+      ],
     );
   }
 
