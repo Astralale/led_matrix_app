@@ -191,8 +191,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
           children: [
             _buildSectionHeader('Bluetooth'),
             const SizedBox(height: 8),
-            if (_foundDevices.isNotEmpty || _isScanning) _buildDeviceList(),
             _buildBluetoothTile(),
+            if (_foundDevices.isNotEmpty || _isScanning) ...[
+              const SizedBox(height: 8),
+              _buildDeviceList(),
+            ],
             const SizedBox(height: 20),
             _buildSectionHeader('Urgence'),
             const SizedBox(height: 8),
@@ -499,6 +502,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
         ? 'Connecté — appuyez pour déconnecter'
         : connecting
         ? 'Connexion en cours...'
+        : _isScanning
+        ? 'Scan en cours — appuyez pour arrêter'
         : error
         ? 'Échec — appuyez pour réessayer'
         : 'Non connecté — appuyez pour scanner';
@@ -517,7 +522,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
             color: iconBg,
             borderRadius: BorderRadius.circular(8),
           ),
-          child: connecting
+          child: (connecting || _isScanning)
               ? SizedBox(
                   width: 22,
                   height: 22,
@@ -546,19 +551,28 @@ class _SettingsScreenState extends State<SettingsScreen> {
         trailing: connecting
             ? null
             : Icon(
-                connected ? Icons.link_off : Icons.search,
+                connected
+                    ? Icons.link_off
+                    : _isScanning
+                    ? Icons.stop_circle_outlined
+                    : Icons.search,
                 color: AppConstants.accentColor.withOpacity(0.4),
                 size: 20,
               ),
-        onTap: connecting
-            ? null
-            : () {
-                if (connected) {
-                  BleService.instance.disconnect();
-                } else {
-                  _startScan();
-                }
-              },
+        onTap: () {
+          if (connected) {
+            BleService.instance.disconnect();
+          } else if (_isScanning) {
+            FlutterBluePlus.stopScan();
+            _scanSub?.cancel();
+            setState(() {
+              _isScanning = false;
+              _foundDevices = [];
+            });
+          } else {
+            _startScan();
+          }
+        },
       ),
     );
   }
