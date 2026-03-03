@@ -1,11 +1,5 @@
-// ============================================================================
-// 📁 screens/settings_screen.dart
-// ============================================================================
-// Écran des paramètres : BLE, message d'urgence, vitesse, luminosité
-// Version complète avec scan BLE et liste des appareils
-// ============================================================================
-
 import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_blue_plus/flutter_blue_plus.dart';
 import '../config/constants.dart';
@@ -37,7 +31,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
   late int _blinkIntervalMs;
   late int _brightness;
 
-  // BLE
   BleConnectionState _bleState = BleService.instance.currentState;
   StreamSubscription<BleConnectionState>? _bleSub;
   StreamSubscription<List<ScanResult>>? _scanSub;
@@ -93,7 +86,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
       final map = <String, ScanResult>{};
       for (final r in results) {
         if (r.device.platformName.isNotEmpty) {
-          // ← Filtre ici
           map[r.device.remoteId.toString()] = r;
         }
       }

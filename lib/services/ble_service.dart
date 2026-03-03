@@ -13,17 +13,13 @@ class BleService {
   BleService._();
   static final BleService instance = BleService._();
 
-  // ---------------------------------------------------------------------------
-  // Protocole
-  // ---------------------------------------------------------------------------
-
   static const String _serviceUuid = '4fafc201-1fb5-459e-8fcc-c5c9c331914b';
   static const String _charUuid = 'beb5483e-36e1-4688-b7f5-ea07361b26a8';
   static const String _deviceName = 'LED_MATRIX';
 
   static const int _frameSize = 512; // 32 × 16 pixels
-  static const int _chunkSize = 128; // Taille max d'un paquet BLE (safe)
-  static const int _chunkDelay = 20; // ms entre deux paquets
+  static const int _chunkSize = 128;
+  static const int _chunkDelay = 20;
 
   /// Headers de trame
   static const int _headerMatrix1 = 0xAA;
@@ -31,31 +27,18 @@ class BleService {
   static const int _headerBrightness1 = 0xBB;
   static const int _headerBrightness2 = 0x55;
 
-  // ---------------------------------------------------------------------------
-  // Reconnexion automatique
-  // ---------------------------------------------------------------------------
-
   static const int _maxReconnectAttempts = 3;
   static const Duration _baseReconnectDelay = Duration(seconds: 2);
   int _reconnectAttempts = 0;
   bool _userDisconnected = false;
 
-  // ---------------------------------------------------------------------------
-  // File d'attente d'envoi
-  // ---------------------------------------------------------------------------
-
   final Queue<Future<void> Function()> _sendQueue = Queue();
   bool _processing = false;
-
-  // ---------------------------------------------------------------------------
-  // État interne
-  // ---------------------------------------------------------------------------
 
   BluetoothDevice? _device;
   BluetoothCharacteristic? _characteristic;
   StreamSubscription? _connSub;
 
-  /// Dernière matrice envoyée (pour l'envoi différentiel)
   List<List<int>>? _lastSentPixels;
 
   final StreamController<BleConnectionState> _stateCtrl =
@@ -74,17 +57,9 @@ class BleService {
     _stateCtrl.add(s);
   }
 
-  // ---------------------------------------------------------------------------
-  // Logging conditionnel (pas de print en release)
-  // ---------------------------------------------------------------------------
-
   void _log(String message) {
     if (kDebugMode) debugPrint('BLE: $message');
   }
-
-  // ---------------------------------------------------------------------------
-  // Connexion
-  // ---------------------------------------------------------------------------
 
   Future<void> connect() async {
     if (_state == BleConnectionState.connecting ||
@@ -112,7 +87,7 @@ class BleService {
 
       final device = await completer.future.timeout(
         const Duration(seconds: 12),
-        onTimeout: () => throw Exception('Appareil "$_deviceName" introuvable'),
+        onTimeout: () => throw Exception('Device "$_deviceName" not found'),
       );
 
       await FlutterBluePlus.stopScan();
@@ -188,7 +163,7 @@ class BleService {
     }
 
     if (char == null) {
-      throw Exception('Caractéristique BLE "$_charUuid" introuvable');
+      throw Exception('BLE characteristic "$_charUuid" not found');
     }
 
     _characteristic = char;
@@ -196,10 +171,9 @@ class BleService {
     _lastSentPixels = null;
     _setState(BleConnectionState.connected);
 
-    // Sauvegarder l'ID pour reconnexion rapide
     StorageService.instance.lastDeviceId = device.remoteId.toString();
 
-    NotificationService.showSuccess('Panneau LED connecté');
+    NotificationService.showSuccess('LED panel connected');
     _log('Connecté à ${device.platformName} (${device.remoteId})');
 
     _connSub?.cancel();
@@ -221,20 +195,16 @@ class BleService {
     });
   }
 
-  // ---------------------------------------------------------------------------
-  // Reconnexion automatique
-  // ---------------------------------------------------------------------------
-
   Future<void> _attemptReconnect() async {
     final device = _device;
     if (device == null || _userDisconnected) return;
 
     if (_reconnectAttempts >= _maxReconnectAttempts) {
-      _log('Reconnexion abandonnée après $_maxReconnectAttempts tentatives');
+      _log('Reconnection abandoned after $_maxReconnectAttempts attempts');
       _device = null;
       _setState(BleConnectionState.error);
       NotificationService.showError(
-        'Reconnexion échouée après $_maxReconnectAttempts tentatives',
+        'Reconnection failed after $_maxReconnectAttempts attempts',
       );
       return;
     }
@@ -242,8 +212,8 @@ class BleService {
     _reconnectAttempts++;
     final delay = _baseReconnectDelay * _reconnectAttempts;
     _log(
-      'Tentative de reconnexion $_reconnectAttempts/$_maxReconnectAttempts '
-      'dans ${delay.inSeconds}s...',
+      'Reconnection attempt $_reconnectAttempts/$_maxReconnectAttempts '
+      'in ${delay.inSeconds}s...',
     );
     NotificationService.showWarning(
       'Reconnexion $_reconnectAttempts/$_maxReconnectAttempts...',
@@ -257,7 +227,7 @@ class BleService {
       _setState(BleConnectionState.connecting);
       await _doConnect(device);
     } catch (e) {
-      _log('Reconnexion échouée: $e');
+      _log('Reconnection failed: $e');
       // _doConnect sets error state; _attemptReconnect is called again
       // from the connectionState listener if it disconnects.
       if (_reconnectAttempts < _maxReconnectAttempts) {
@@ -266,15 +236,11 @@ class BleService {
         _device = null;
         _setState(BleConnectionState.error);
         NotificationService.showError(
-          'Reconnexion échouée après $_maxReconnectAttempts tentatives',
+          'Reconnection failed after $_maxReconnectAttempts attempts',
         );
       }
     }
   }
-
-  // ---------------------------------------------------------------------------
-  // Déconnexion
-  // ---------------------------------------------------------------------------
 
   Future<void> disconnect() async {
     _userDisconnected = true;
@@ -285,12 +251,8 @@ class BleService {
     _characteristic = null;
     _device = null;
     _setState(BleConnectionState.disconnected);
-    NotificationService.showInfo('Déconnecté du panneau LED');
+    NotificationService.showInfo('Disconnected from LED panel');
   }
-
-  // ---------------------------------------------------------------------------
-  // File d'attente d'envoi
-  // ---------------------------------------------------------------------------
 
   Future<void> _enqueue(Future<void> Function() task) async {
     _sendQueue.add(task);
@@ -304,12 +266,12 @@ class BleService {
           await next().timeout(
             const Duration(seconds: 5),
             onTimeout: () {
-              _log('Timeout opération BLE');
+              _log('BLE operation timeout');
               throw TimeoutException('BLE operation timeout');
             },
           );
         } catch (e) {
-          _log('Erreur file d\'attente: $e');
+          _log('Send queue error: $e');
         }
       }
     } finally {
@@ -317,17 +279,13 @@ class BleService {
     }
   }
 
-  // ---------------------------------------------------------------------------
-  // Envoi matrice
-  // ---------------------------------------------------------------------------
-
   Future<void> sendMatrix(List<List<int>> pixels) async {
     if (!isConnected || _characteristic == null) {
-      _log('Non connecté, envoi ignoré');
+      _log('Not connected, send ignored');
       return;
     }
 
-    // Envoi différentiel : ne rien envoyer si la matrice n'a pas changé
+    // Differential send: skip if matrix unchanged
     if (_lastSentPixels != null) {
       bool changed = false;
       for (int y = 0; y < pixels.length && !changed; y++) {
@@ -338,7 +296,7 @@ class BleService {
       if (!changed) return;
     }
 
-    // Copier pour le cache différentiel
+    // Copy for differential cache
     final copy = pixels.map((r) => List<int>.from(r)).toList();
 
     await _enqueue(() async {
@@ -367,10 +325,6 @@ class BleService {
     });
   }
 
-  // ---------------------------------------------------------------------------
-  // Envoi luminosité
-  // ---------------------------------------------------------------------------
-
   Future<void> sendBrightness(int brightness) async {
     if (!isConnected || _characteristic == null) return;
 
@@ -383,13 +337,9 @@ class BleService {
       frame[1] = _headerBrightness2;
       frame[2] = brightness.clamp(0, 255);
       await char.write(frame.toList(), withoutResponse: true);
-      _log('Luminosité envoyée: $brightness');
+      _log('Brightness sent: $brightness');
     });
   }
-
-  // ---------------------------------------------------------------------------
-  // Nettoyage
-  // ---------------------------------------------------------------------------
 
   void dispose() {
     _connSub?.cancel();

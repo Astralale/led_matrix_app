@@ -1,11 +1,5 @@
-// ============================================================================
-// 📁 widgets/matrix_preview.dart
-// ============================================================================
-// Widget réutilisable pour afficher un aperçu de la matrice LED.
-// Peut être utilisé en mode mini (texte) ou plein écran (dessin).
-// ============================================================================
-
 import 'package:flutter/material.dart';
+
 import '../config/constants.dart';
 import '../models/led_matrix.dart';
 
@@ -27,8 +21,8 @@ class MatrixPreview extends StatelessWidget {
   Widget build(BuildContext context) {
     return LayoutBuilder(
       builder: (context, constraints) {
-        // Calculer la taille des cellules
-        final calculatedCellSize = cellSize ?? _calculateCellSize(constraints);
+        final calculatedCellSize =
+            cellSize ?? _calculateCellSize(constraints);
         final cellMargin = calculatedCellSize * 0.04;
         final actualCellSize = calculatedCellSize - (cellMargin * 2);
 
@@ -37,10 +31,6 @@ class MatrixPreview extends StatelessWidget {
     );
   }
 
-  // ============================================================================
-  // CALCUL DE LA TAILLE DES CELLULES
-  // ============================================================================
-
   double _calculateCellSize(BoxConstraints constraints) {
     double availableWidth = constraints.maxWidth - 20;
     double availableHeight = constraints.maxHeight - 20;
@@ -48,16 +38,11 @@ class MatrixPreview extends StatelessWidget {
     double cellWidth = availableWidth / AppConstants.matrixWidth;
     double cellHeight = availableHeight / AppConstants.matrixHeight;
 
-    // Prendre la plus petite pour garder des cellules carrées
     double size = cellWidth < cellHeight ? cellWidth : cellHeight;
 
-    // Limites min/max
+    // Min/max bounds
     return size.clamp(2.0, 20.0);
   }
-
-  // ============================================================================
-  // CONSTRUCTION DE LA GRILLE
-  // ============================================================================
 
   Widget _buildGrid(double cellSize, double cellMargin) {
     return Column(
@@ -72,10 +57,6 @@ class MatrixPreview extends StatelessWidget {
       }),
     );
   }
-
-  // ============================================================================
-  // CONSTRUCTION D'UNE CELLULE (LED)
-  // ============================================================================
 
   Widget _buildCell(int x, int y, double cellSize, double cellMargin) {
     final colorIndex = matrix.getPixel(x, y);
@@ -101,7 +82,7 @@ class MatrixPreview extends StatelessWidget {
       ),
     );
 
-    // Si on a un callback, rendre la cellule interactive
+    // If there's a callback, make the cell interactive
     if (onPixelTap != null) {
       return GestureDetector(onTap: () => onPixelTap!(x, y), child: cell);
     }
@@ -109,11 +90,6 @@ class MatrixPreview extends StatelessWidget {
     return cell;
   }
 }
-
-// ============================================================================
-// WIDGET INTERACTIF POUR LE DESSIN
-// ============================================================================
-// Version spéciale avec support du drag pour dessiner
 
 class InteractiveMatrixPreview extends StatefulWidget {
   final LedMatrix matrix;

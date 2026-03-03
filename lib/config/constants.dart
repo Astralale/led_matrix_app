@@ -8,21 +8,21 @@ class AppConstants {
   static const int totalLeds = matrixWidth * matrixHeight; // 512
 
   static const List<Color> colorPalette = [
-    Color(0xFF000000), // 0 - Éteint
-    Color(0xFFFF0000), // 1 - Rouge
-    Color(0xFF00FF00), // 2 - Vert
-    Color(0xFF0000FF), // 3 - Bleu
-    Color(0xFFFFFF00), // 4 - Jaune
+    Color(0xFF000000), // 0 - Off
+    Color(0xFFFF0000), // 1 - Red
+    Color(0xFF00FF00), // 2 - Green
+    Color(0xFF0000FF), // 3 - Blue
+    Color(0xFFFFFF00), // 4 - Yellow
     Color(0xFFFF00FF), // 5 - Magenta
     Color(0xFF00FFFF), // 6 - Cyan
-    Color(0xFFFFFFFF), // 7 - Blanc
+    Color(0xFFFFFFFF), // 7 - White
     Color(0xFFFF8800), // 8 - Orange
-    Color(0xFF8800FF), // 9 - Violet
-    Color(0xFFFF1493), // 10 - Rose
-    Color(0xFFFF4400), // 11 - Rouge-orange
-    Color(0xFF80FF00), // 12 - Vert lime
-    Color(0xFF00AAFF), // 13 - Bleu ciel
-    Color(0xFFFFD700), // 14 - Or
+    Color(0xFF8800FF), // 9 - Purple
+    Color(0xFFFF1493), // 10 - Pink
+    Color(0xFFFF4400), // 11 - Red-orange
+    Color(0xFF80FF00), // 12 - Lime
+    Color(0xFF00AAFF), // 13 - Sky blue
+    Color(0xFFFFD700), // 14 - Gold
     Color(0xFF00FFB0), // 15 - Turquoise
   ];
 

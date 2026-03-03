@@ -186,6 +186,6 @@ class MjpegRecorder {
       await framesDir.delete(recursive: true);
     }
 
-    return asset?.id;
+    return asset.id;
   }
 }

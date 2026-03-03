@@ -1,11 +1,5 @@
-// ============================================================================
-// 📁 services/storage_service.dart
-// ============================================================================
-// Persistance des paramètres utilisateur via SharedPreferences.
-// Singleton — accès via StorageService.instance
-// ============================================================================
-
 import 'dart:convert';
+
 import 'package:shared_preferences/shared_preferences.dart';
 
 class StorageService {
@@ -27,52 +21,28 @@ class StorageService {
     _prefs = await SharedPreferences.getInstance();
   }
 
-  // ---------------------------------------------------------------------------
-  // Message d'urgence
-  // ---------------------------------------------------------------------------
-
   String get emergencyMessage =>
       _prefs.getString(_keyEmergencyMessage) ?? 'HELP';
 
   set emergencyMessage(String value) =>
       _prefs.setString(_keyEmergencyMessage, value);
 
-  // ---------------------------------------------------------------------------
-  // Vitesse de défilement (ms entre deux frames)
-  // ---------------------------------------------------------------------------
-
   int get scrollSpeedMs => _prefs.getInt(_keyScrollSpeedMs) ?? 60;
 
   set scrollSpeedMs(int value) => _prefs.setInt(_keyScrollSpeedMs, value);
-
-  // ---------------------------------------------------------------------------
-  // Intervalle de clignotement (ms)
-  // ---------------------------------------------------------------------------
 
   int get blinkIntervalMs => _prefs.getInt(_keyBlinkIntervalMs) ?? 500;
 
   set blinkIntervalMs(int value) => _prefs.setInt(_keyBlinkIntervalMs, value);
 
-  // ---------------------------------------------------------------------------
-  // Luminosité (0–255)
-  // ---------------------------------------------------------------------------
-
   int get brightness => _prefs.getInt(_keyBrightness) ?? 60;
 
   set brightness(int value) => _prefs.setInt(_keyBrightness, value);
-
-  // ---------------------------------------------------------------------------
-  // Couleur sélectionnée (index dans la palette)
-  // ---------------------------------------------------------------------------
 
   int get selectedColorIndex => _prefs.getInt(_keySelectedColorIndex) ?? 1;
 
   set selectedColorIndex(int value) =>
       _prefs.setInt(_keySelectedColorIndex, value);
-
-  // ---------------------------------------------------------------------------
-  // Dernier appareil BLE connecté (pour reconnexion rapide)
-  // ---------------------------------------------------------------------------
 
   String? get lastDeviceId => _prefs.getString(_keyLastDeviceId);
 
@@ -83,10 +53,6 @@ class StorageService {
       _prefs.remove(_keyLastDeviceId);
     }
   }
-
-  // ---------------------------------------------------------------------------
-  // Dessins sauvegardés
-  // ---------------------------------------------------------------------------
 
   List<Map<String, dynamic>> get savedDesigns {
     final json = _prefs.getString(_keySavedDesigns);

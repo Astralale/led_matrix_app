@@ -1,11 +1,5 @@
-// ============================================================================
-// 📁 services/notification_service.dart
-// ============================================================================
-// Service de notifications visuelles (SnackBar).
-// Utilise un GlobalKey<ScaffoldMessengerState> partagé avec MaterialApp.
-// ============================================================================
-
 import 'package:flutter/material.dart';
+
 import '../config/constants.dart';
 
 class NotificationService {
@@ -14,10 +8,6 @@ class NotificationService {
   /// Clé à passer à `MaterialApp.scaffoldMessengerKey`.
   static final GlobalKey<ScaffoldMessengerState> messengerKey =
       GlobalKey<ScaffoldMessengerState>();
-
-  // ---------------------------------------------------------------------------
-  // Helpers
-  // ---------------------------------------------------------------------------
 
   static void _show(
     String message, {
@@ -53,10 +43,6 @@ class NotificationService {
         ),
       );
   }
-
-  // ---------------------------------------------------------------------------
-  // Public API
-  // ---------------------------------------------------------------------------
 
   static void showSuccess(String message) {
     _show(

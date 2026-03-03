@@ -1,21 +1,7 @@
-// ============================================================================
-// 📁 utils/bitmap_font.dart
-// ============================================================================
-// Police bitmap 5x7 pixels pour afficher du texte sur la matrice LED.
-// Chaque caractère est défini comme une grille de 0 et 1.
-// ============================================================================
-
 class BitmapFont {
-  // Empêche l'instanciation
   BitmapFont._();
 
-  // Hauteur standard des caractères
   static const int charHeight = 7;
-
-  // ============================================================================
-  // DÉFINITION DES CARACTÈRES
-  // ============================================================================
-  // Format : List<List<int>> où 1 = pixel allumé, 0 = pixel éteint
 
   static const Map<String, List<List<int>>> characters = {
     'A': [
@@ -253,7 +239,7 @@ class BitmapFont {
       [1, 1, 1, 1, 1],
     ],
 
-    // Chiffres
+    // Digits
     '0': [
       [0, 1, 1, 1, 0],
       [1, 0, 0, 0, 1],
@@ -345,7 +331,7 @@ class BitmapFont {
       [0, 1, 1, 1, 0],
     ],
 
-    // Ponctuation
+    // Punctuation
     '!': [
       [0, 1, 0],
       [0, 1, 0],
@@ -465,30 +451,20 @@ class BitmapFont {
     ],
   };
 
-  // Espace entre les caractères
   static const int charSpacing = 1;
-
-  // Largeur d'un espace
   static const int spaceWidth = 3;
 
-  // ============================================================================
-  // MÉTHODE POUR OBTENIR UN CARACTÈRE
-  // ============================================================================
+  static List<List<int>>? getCharacter(String char) =>
+      characters[char.toUpperCase()];
 
-  static List<List<int>>? getCharacter(String char) {
-    return characters[char.toUpperCase()];
-  }
-
-  // Largeur d'un caractère
   static int getCharWidth(String char) {
     final pattern = getCharacter(char);
     if (pattern != null && pattern.isNotEmpty) {
       return pattern[0].length;
     }
-    return spaceWidth; // Espace par défaut
+    return spaceWidth;
   }
 
-  // Calcule la largeur totale d'un texte en pixels
   static int calculateTextWidth(String text) {
     int width = 0;
     for (int i = 0; i < text.length; i++) {
@@ -498,7 +474,7 @@ class BitmapFont {
       } else {
         width += getCharWidth(char);
       }
-      // Ajouter l'espacement (sauf après le dernier caractère)
+      // Add spacing except after the last character
       if (i < text.length - 1) {
         width += charSpacing;
       }

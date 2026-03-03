@@ -1,10 +1,3 @@
-// ============================================================================
-// 📁 app.dart
-// ============================================================================
-// Configuration de l'application MaterialApp.
-// Sépare la configuration du point d'entrée.
-// ============================================================================
-
 import 'package:flutter/material.dart';
 import 'config/constants.dart';
 import 'screens/text_mode_screen.dart';
@@ -16,14 +9,9 @@ class LedMatrixApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      // Clé globale pour les notifications (SnackBar)
       scaffoldMessengerKey: NotificationService.messengerKey,
-
-      // Métadonnées
       title: 'LED Matrix Controller',
       debugShowCheckedModeBanner: false,
-
-      // Thème
       theme: ThemeData(
         useMaterial3: true,
         colorScheme: ColorScheme.fromSeed(
@@ -31,7 +19,6 @@ class LedMatrixApp extends StatelessWidget {
           brightness: Brightness.light,
         ),
 
-        // Personnalisation des composants
         scaffoldBackgroundColor: AppConstants.backgroundColor,
 
         appBarTheme: const AppBarTheme(
@@ -102,7 +89,6 @@ class LedMatrixApp extends StatelessWidget {
         ),
       ),
 
-      // Écran d'accueil
       home: const TextModeScreen(),
     );
   }

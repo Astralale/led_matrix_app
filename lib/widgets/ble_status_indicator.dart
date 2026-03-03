@@ -1,11 +1,5 @@
-// ============================================================================
-// 📁 widgets/ble_status_indicator.dart
-// ============================================================================
-// Petit badge affichant l'état de la connexion BLE en temps réel.
-// À placer dans l'AppBar pour une visibilité permanente.
-// ============================================================================
-
 import 'dart:async';
+
 import 'package:flutter/material.dart';
 import '../config/constants.dart';
 import '../services/ble_service.dart';

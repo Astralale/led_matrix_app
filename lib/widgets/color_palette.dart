@@ -1,16 +1,6 @@
-// ============================================================================
-// 📁 widgets/color_palette.dart
-// ============================================================================
-// Widget réutilisable pour sélectionner une couleur.
-// Deux variantes : horizontale (texte) et grille (dessin).
-// ============================================================================
-
 import 'package:flutter/material.dart';
-import '../config/constants.dart';
 
-// ============================================================================
-// 🎨 PALETTE HORIZONTALE (Mode Texte)
-// ============================================================================
+import '../config/constants.dart';
 
 class HorizontalColorPalette extends StatelessWidget {
   final int selectedColorIndex;
@@ -92,10 +82,6 @@ class HorizontalColorPalette extends StatelessWidget {
     return null;
   }
 }
-
-// ============================================================================
-// 🎨 PALETTE EN GRILLE (Mode Dessin)
-// ============================================================================
 
 class GridColorPalette extends StatelessWidget {
   final int selectedColorIndex;
