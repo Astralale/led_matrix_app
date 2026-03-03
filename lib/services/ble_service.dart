@@ -2,7 +2,9 @@ import 'dart:async';
 import 'dart:typed_data';
 
 import 'package:flutter_blue_plus/flutter_blue_plus.dart';
+
 enum BleConnectionState { disconnected, scanning, connecting, connected, error }
+
 class BleService {
   BleService._();
   static final BleService instance = BleService._();
@@ -21,7 +23,7 @@ class BleService {
   bool _sending = false;
 
   final StreamController<BleConnectionState> _stateCtrl =
-  StreamController<BleConnectionState>.broadcast();
+      StreamController<BleConnectionState>.broadcast();
 
   BleConnectionState _state = BleConnectionState.disconnected;
 
@@ -35,7 +37,6 @@ class BleService {
     _state = s;
     _stateCtrl.add(s);
   }
-
 
   Future<void> connect() async {
     if (_state == BleConnectionState.connecting ||
