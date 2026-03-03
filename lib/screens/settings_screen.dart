@@ -1,14 +1,17 @@
 import 'package:flutter/material.dart';
 import '../config/constants.dart';
+import '../services/ble_service.dart';
 
 class SettingsScreen extends StatefulWidget {
   final String emergencyMessage;
   final int scrollSpeedMs;
+  final int brightness;
 
   const SettingsScreen({
     super.key,
     required this.emergencyMessage,
     required this.scrollSpeedMs,
+    required this.brightness,
   });
 
   @override
@@ -18,6 +21,7 @@ class SettingsScreen extends StatefulWidget {
 class _SettingsScreenState extends State<SettingsScreen> {
   late String _emergencyMessage;
   late int _scrollSpeedMs;
+  late int _brightness;
 
   static const Map<int, String> _speedOptions = {
     100: 'Lent',
@@ -30,12 +34,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
     super.initState();
     _emergencyMessage = widget.emergencyMessage;
     _scrollSpeedMs = widget.scrollSpeedMs;
+    _brightness = widget.brightness;
   }
 
   Map<String, dynamic> _buildResult() {
     return {
       'emergencyMessage': _emergencyMessage,
       'scrollSpeedMs': _scrollSpeedMs,
+      'brightness': _brightness,
     };
   }
 
@@ -136,6 +142,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
             _buildSectionHeader('Défilement'),
             const SizedBox(height: 8),
             _buildScrollSpeedTile(),
+            const SizedBox(height: 20),
+            _buildSectionHeader('Panneau LED'),
+            const SizedBox(height: 8),
+            _buildBrightnessTile(),
           ],
         ),
       ),
@@ -339,6 +349,82 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   ),
                 );
               }).toList(),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildBrightnessTile() {
+    final percent = (_brightness / 255 * 100).round();
+
+    return Container(
+      decoration: BoxDecoration(
+        color: AppConstants.surfaceColor,
+        borderRadius: BorderRadius.circular(AppConstants.defaultRadius),
+        border: Border.all(color: AppConstants.borderColor),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          children: [
+            Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: AppConstants.accentColor.withOpacity(0.08),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: const Icon(
+                    Icons.brightness_6,
+                    color: AppConstants.accentColor,
+                    size: 22,
+                  ),
+                ),
+                const SizedBox(width: 16),
+                const Expanded(
+                  child: Text(
+                    'Luminosité',
+                    style: TextStyle(
+                      color: AppConstants.accentColor,
+                      fontSize: 15,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+                Text(
+                  '$percent %',
+                  style: TextStyle(
+                    color: AppConstants.accentColor.withOpacity(0.5),
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            SliderTheme(
+              data: SliderThemeData(
+                activeTrackColor: AppConstants.accentColor,
+                inactiveTrackColor: AppConstants.borderColor,
+                thumbColor: AppConstants.accentColor,
+                overlayColor: AppConstants.accentColor.withOpacity(0.1),
+                trackHeight: 4,
+                thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 8),
+              ),
+              child: Slider(
+                value: _brightness.toDouble(),
+                min: 5,
+                max: 255,
+                onChanged: (value) {
+                  setState(() => _brightness = value.round());
+                },
+                onChangeEnd: (value) {
+                  BleService.instance.sendBrightness(value.round());
+                },
+              ),
             ),
           ],
         ),

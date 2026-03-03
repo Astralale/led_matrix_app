@@ -41,6 +41,7 @@
 #define FRAME_SIZE    512
 #define HEADER_1      0xAA
 #define HEADER_2      0x55
+#define BRIGHT_HEADER 0xBB
 
 // ─── Variables globales ───────────────────────────────────────────────────────
 CRGB leds[NUM_LEDS];
@@ -120,10 +121,19 @@ class RxCallbacks : public BLECharacteristicCallbacks {
     for (size_t i = 0; i < data.size(); i++) {
       uint8_t b = (uint8_t)data[i];
 
-      // -- Recherche de l'entête 0xAA 0x55 --
+      // -- Recherche de l'entête 0xAA 0x55 ou 0xBB 0x55 --
       if (waitHeader1) {
         if (b == HEADER_1) {
           waitHeader1 = false;
+        } else if (b == BRIGHT_HEADER && i + 2 < data.size()) {
+          uint8_t next = (uint8_t)data[i + 1];
+          if (next == HEADER_2) {
+            uint8_t brightness = (uint8_t)data[i + 2];
+            FastLED.setBrightness(brightness);
+            FastLED.show();
+            Serial.printf("[LED] Luminosité réglée à %d\n", brightness);
+            i += 2;
+          }
         }
         continue;
       }

@@ -40,6 +40,7 @@ class _TextModeScreenState extends State<TextModeScreen> {
   StreamSubscription<BleConnectionState>? _bleSub;
 
   String _emergencyMessage = 'HELP';
+  int _brightness = 60;
 
   @override
   void initState() {
@@ -217,6 +218,7 @@ class _TextModeScreenState extends State<TextModeScreen> {
         builder: (context) => SettingsScreen(
           emergencyMessage: _emergencyMessage,
           scrollSpeedMs: _scrollSpeedMs,
+          brightness: _brightness,
         ),
       ),
     );
@@ -233,6 +235,10 @@ class _TextModeScreenState extends State<TextModeScreen> {
           if (_isScrolling) {
             _restartActiveScroll();
           }
+        }
+        final brightness = result['brightness'] as int?;
+        if (brightness != null) {
+          _brightness = brightness;
         }
       });
     }

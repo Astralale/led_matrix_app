@@ -156,7 +156,6 @@ class BleService {
     _sending = true;
 
     try {
-      // Construction de la trame : [0xAA, 0x55, 512 pixels]
       final frame = Uint8List(_frameSize + 2);
       frame[0] = 0xAA;
       frame[1] = 0x55;
@@ -167,7 +166,6 @@ class BleService {
         }
       }
 
-      // Découpage en paquets et envoi
       int offset = 0;
       while (offset < frame.length) {
         final end = (offset + _chunkSize).clamp(0, frame.length);
@@ -176,10 +174,22 @@ class BleService {
         offset = end;
       }
     } catch (_) {
-      // Connexion perdue pendant l'envoi — ignorer silencieusement
     } finally {
       _sending = false;
     }
+  }
+
+  Future<void> sendBrightness(int brightness) async {
+    final char = _characteristic;
+    if (char == null) return;
+
+    try {
+      final frame = Uint8List(3);
+      frame[0] = 0xBB;
+      frame[1] = 0x55;
+      frame[2] = brightness.clamp(0, 255);
+      await char.write(frame.toList(), withoutResponse: true);
+    } catch (_) {}
   }
 
   void dispose() {
