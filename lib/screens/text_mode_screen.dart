@@ -431,6 +431,8 @@ class _TextModeScreenState extends State<TextModeScreen> {
       // Si le défilement est déjà activé, lancer le scroll dessin immédiatement
       if (_scrollEnabled) {
         _startDrawScroll();
+      } else {
+        _sendCurrentMatrix();
       }
     }
 
