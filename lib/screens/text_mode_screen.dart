@@ -347,10 +347,6 @@ class _TextModeScreenState extends State<TextModeScreen> {
 
           const SizedBox(height: 10),
 
-          _buildHelpButton(),
-
-          const SizedBox(height: 10),
-
           _buildActionButtons(),
         ],
       ),
@@ -396,6 +392,22 @@ class _TextModeScreenState extends State<TextModeScreen> {
         ],
       ),
       actions: [
+        Padding(
+          padding: const EdgeInsets.only(right: 4),
+          child: ElevatedButton(
+            onPressed: _displayHelp,
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppConstants.dangerColor,
+              foregroundColor: Colors.white,
+              elevation: 0,
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(AppConstants.defaultRadius),
+              ),
+            ),
+            child: const Icon(Icons.warning_amber_rounded, size: 18),
+          ),
+        ),
         Padding(
           padding: const EdgeInsets.only(right: 4),
           child: ElevatedButton.icon(
@@ -612,38 +624,6 @@ class _TextModeScreenState extends State<TextModeScreen> {
             availableColors: AppConstants.textModeColors,
           ),
         ],
-      ),
-    );
-  }
-
-  Widget _buildHelpButton() {
-    return Padding(
-      padding: const EdgeInsets.symmetric(
-        horizontal: AppConstants.defaultPadding,
-      ),
-      child: SizedBox(
-        width: double.infinity,
-        height: 50,
-        child: ElevatedButton.icon(
-          onPressed: _displayHelp,
-          icon: const Icon(Icons.warning_amber_rounded, size: 22),
-          label: const Text(
-            'Urgence',
-            style: TextStyle(
-              fontSize: 15,
-              fontWeight: FontWeight.w800,
-              letterSpacing: 1.2,
-            ),
-          ),
-          style: ElevatedButton.styleFrom(
-            backgroundColor: AppConstants.dangerColor,
-            foregroundColor: Colors.white,
-            elevation: 0,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(AppConstants.defaultRadius),
-            ),
-          ),
-        ),
       ),
     );
   }
