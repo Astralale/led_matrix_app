@@ -35,10 +35,6 @@ class _TextModeScreenState extends State<TextModeScreen> {
   // Draw scroll
   List<List<int>>? _scrollSnapshot;
 
-  // BLE
-  BleConnectionState _bleState = BleService.instance.currentState;
-  StreamSubscription<BleConnectionState>? _bleSub;
-
   String _emergencyMessage = 'HELP';
   int _brightness = 60;
 
@@ -49,16 +45,12 @@ class _TextModeScreenState extends State<TextModeScreen> {
       DeviceOrientation.portraitUp,
       DeviceOrientation.portraitDown,
     ]);
-    _bleSub = BleService.instance.stateStream.listen(
-      (state) => setState(() => _bleState = state),
-    );
   }
 
   @override
   void dispose() {
     _scrollTimer?.cancel();
     _textController.dispose();
-    _bleSub?.cancel();
     super.dispose();
   }
 
@@ -476,88 +468,6 @@ class _TextModeScreenState extends State<TextModeScreen> {
     );
   }
 
-  Widget _buildBleFooter() {
-    final connected = _bleState == BleConnectionState.connected;
-    final scanning =
-        _bleState == BleConnectionState.scanning ||
-        _bleState == BleConnectionState.connecting;
-    final error = _bleState == BleConnectionState.error;
-
-    final Color fg = connected
-        ? AppConstants.successColor
-        : error
-        ? AppConstants.dangerColor
-        : AppConstants.backgroundColor.withOpacity(0.6);
-
-    final IconData icon = connected
-        ? Icons.bluetooth_connected
-        : scanning
-        ? Icons.bluetooth_searching
-        : error
-        ? Icons.bluetooth_disabled
-        : Icons.bluetooth;
-
-    final String label = connected
-        ? 'Panneau connecté — appuyez pour déconnecter'
-        : scanning
-        ? 'Connexion en cours...'
-        : error
-        ? 'Connexion échouée — appuyez pour réessayer'
-        : 'Non connecté — appuyez pour connecter';
-
-    return GestureDetector(
-      onTap: scanning
-          ? null
-          : () {
-              if (connected) {
-                BleService.instance.disconnect();
-              } else {
-                BleService.instance.connect().catchError((_) {});
-              }
-            },
-      child: Container(
-        width: double.infinity,
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-        decoration: BoxDecoration(
-          color: connected
-              ? AppConstants.successColor.withOpacity(0.10)
-              : error
-              ? AppConstants.dangerColor.withOpacity(0.10)
-              : AppConstants.accentColor.withOpacity(0.12),
-          borderRadius: const BorderRadius.vertical(
-            bottom: Radius.circular(AppConstants.defaultRadius - 2),
-          ),
-        ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            if (scanning)
-              SizedBox(
-                width: 11,
-                height: 11,
-                child: CircularProgressIndicator(
-                  strokeWidth: 1.6,
-                  color: AppConstants.backgroundColor.withOpacity(0.6),
-                ),
-              )
-            else
-              Icon(icon, size: 13, color: fg),
-            const SizedBox(width: 6),
-            Text(
-              label,
-              style: TextStyle(
-                color: fg,
-                fontSize: 10,
-                fontWeight: FontWeight.w600,
-                letterSpacing: 0.3,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
   Widget _buildMatrixPreview() {
     return Flexible(
       flex: 2,
@@ -573,7 +483,6 @@ class _TextModeScreenState extends State<TextModeScreen> {
             children: [
               _buildPanelHeader(),
               Expanded(child: MatrixPreview(matrix: _matrix, showGlow: true)),
-              _buildBleFooter(),
             ],
           ),
         ),

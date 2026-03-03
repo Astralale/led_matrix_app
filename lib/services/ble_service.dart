@@ -62,7 +62,6 @@ class BleService {
     _setState(BleConnectionState.scanning);
 
     try {
-      // Scan
       final completer = Completer<BluetoothDevice>();
       StreamSubscription? scanSub;
 
@@ -84,47 +83,7 @@ class BleService {
       await FlutterBluePlus.stopScan();
       await scanSub.cancel();
 
-      _device = device;
-      _setState(BleConnectionState.connecting);
-
-      // Connexion
-      await device.connect(timeout: const Duration(seconds: 10));
-
-      // MTU élevé pour envoyer plusieurs octets par paquet
-      await device.requestMtu(256);
-
-      // Découverte des services
-      final services = await device.discoverServices();
-      BluetoothCharacteristic? char;
-
-      for (final svc in services) {
-        if (svc.uuid.toString().toLowerCase() == _serviceUuid) {
-          for (final c in svc.characteristics) {
-            if (c.uuid.toString().toLowerCase() == _charUuid) {
-              char = c;
-              break;
-            }
-          }
-        }
-      }
-
-      if (char == null) {
-        throw Exception('Caractéristique BLE "$_charUuid" introuvable');
-      }
-
-      _characteristic = char;
-      _setState(BleConnectionState.connected);
-
-      // Surveiller la déconnexion
-      _connSub?.cancel();
-      _connSub = device.connectionState.listen((state) {
-        if (state == BluetoothConnectionState.disconnected) {
-          _characteristic = null;
-          _device = null;
-          _connSub?.cancel();
-          _setState(BleConnectionState.disconnected);
-        }
-      });
+      await _doConnect(device);
     } on Exception {
       await FlutterBluePlus.stopScan();
       _characteristic = null;
@@ -132,6 +91,83 @@ class BleService {
       _setState(BleConnectionState.error);
       rethrow;
     }
+  }
+
+  /// Se connecte à un appareil BLE spécifique choisi par l'utilisateur.
+  Future<void> connectToDevice(BluetoothDevice device) async {
+    if (_state == BleConnectionState.connecting ||
+        _state == BleConnectionState.connected)
+      return;
+    _setState(BleConnectionState.connecting);
+    try {
+      await _doConnect(device);
+    } on Exception {
+      _characteristic = null;
+      _device = null;
+      _setState(BleConnectionState.error);
+      rethrow;
+    }
+  }
+
+  /// Lance un scan BLE et retourne les appareils trouvés (avec nom uniquement).
+  Future<List<ScanResult>> scanForDevices({
+    Duration timeout = const Duration(seconds: 10),
+  }) async {
+    final resultsMap = <String, ScanResult>{};
+
+    await FlutterBluePlus.startScan(timeout: timeout);
+
+    final sub = FlutterBluePlus.scanResults.listen((results) {
+      for (final r in results) {
+        resultsMap[r.device.remoteId.toString()] = r;
+      }
+    });
+
+    // Attendre la fin du scan
+    await FlutterBluePlus.isScanning.where((v) => v == false).first;
+    await sub.cancel();
+
+    return resultsMap.values.toList();
+  }
+
+  /// Logique partagée de connexion à un [device] déjà identifié.
+  Future<void> _doConnect(BluetoothDevice device) async {
+    _device = device;
+    _setState(BleConnectionState.connecting);
+
+    await device.connect(timeout: const Duration(seconds: 10));
+    await device.requestMtu(256);
+
+    final services = await device.discoverServices();
+    BluetoothCharacteristic? char;
+
+    for (final svc in services) {
+      if (svc.uuid.toString().toLowerCase() == _serviceUuid) {
+        for (final c in svc.characteristics) {
+          if (c.uuid.toString().toLowerCase() == _charUuid) {
+            char = c;
+            break;
+          }
+        }
+      }
+    }
+
+    if (char == null) {
+      throw Exception('Caractéristique BLE "$_charUuid" introuvable');
+    }
+
+    _characteristic = char;
+    _setState(BleConnectionState.connected);
+
+    _connSub?.cancel();
+    _connSub = device.connectionState.listen((state) {
+      if (state == BluetoothConnectionState.disconnected) {
+        _characteristic = null;
+        _device = null;
+        _connSub?.cancel();
+        _setState(BleConnectionState.disconnected);
+      }
+    });
   }
 
   /// Déconnecte l'appareil courant.
