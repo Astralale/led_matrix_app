@@ -103,6 +103,7 @@ class _CameraModeScreenState extends State<CameraModeScreen> {
     }
   }
 
+  // ignore: unused_element
   Future<void> _getStill() async {
     if (_loadingStill) return;
     setState(() => _loadingStill = true);
@@ -233,11 +234,11 @@ class _CameraModeScreenState extends State<CameraModeScreen> {
   Widget _previewPaused() {
     return Container(
       alignment: Alignment.center,
-      color: Colors.black.withOpacity(0.25),
+      color: Colors.black.withValues(alpha: 0.25),
       child: Text(
         'Stream en pause',
         style: TextStyle(
-          color: Colors.white.withOpacity(0.85),
+          color: Colors.white.withValues(alpha: 0.85),
           fontWeight: FontWeight.w700,
         ),
       ),
@@ -247,13 +248,13 @@ class _CameraModeScreenState extends State<CameraModeScreen> {
   Widget _previewError() {
     return Container(
       alignment: Alignment.center,
-      color: Colors.black.withOpacity(0.25),
+      color: Colors.black.withValues(alpha: 0.25),
       padding: const EdgeInsets.all(16),
       child: Text(
         'Impossible d’afficher le flux.\nVérifie que tu es connecté au Wi-Fi de l’ESP32.',
         textAlign: TextAlign.center,
         style: TextStyle(
-          color: Colors.white.withOpacity(0.85),
+          color: Colors.white.withValues(alpha: 0.85),
           fontWeight: FontWeight.w600,
         ),
       ),
@@ -265,7 +266,7 @@ class _CameraModeScreenState extends State<CameraModeScreen> {
       width: double.infinity,
       padding: const EdgeInsets.symmetric(vertical: 7),
       decoration: BoxDecoration(
-        color: AppConstants.accentColor.withOpacity(0.10),
+        color: AppConstants.accentColor.withValues(alpha: 0.10),
         borderRadius: const BorderRadius.vertical(
           top: Radius.circular(AppConstants.defaultRadius - 2),
         ),
@@ -501,7 +502,9 @@ class _CameraModeScreenState extends State<CameraModeScreen> {
               icon: const Icon(Icons.refresh, size: 18),
               label: const Text('Init.', style: TextStyle(fontSize: 14)),
               style: OutlinedButton.styleFrom(
-                foregroundColor: AppConstants.accentColor.withOpacity(0.7),
+                foregroundColor: AppConstants.accentColor.withValues(
+                  alpha: 0.7,
+                ),
                 side: BorderSide(color: AppConstants.borderColor),
               ),
             ),
@@ -555,7 +558,7 @@ class _CameraModeScreenState extends State<CameraModeScreen> {
               Container(
                 padding: const EdgeInsets.all(8),
                 decoration: BoxDecoration(
-                  color: AppConstants.accentColor.withOpacity(0.08),
+                  color: AppConstants.accentColor.withValues(alpha: 0.08),
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Icon(icon, color: AppConstants.accentColor, size: 20),
@@ -596,7 +599,7 @@ class _CameraModeScreenState extends State<CameraModeScreen> {
               child: Text(
                 label,
                 style: TextStyle(
-                  color: AppConstants.accentColor.withOpacity(0.75),
+                  color: AppConstants.accentColor.withValues(alpha: 0.75),
                   fontSize: 12,
                   fontWeight: FontWeight.w700,
                   letterSpacing: 0.4,
@@ -606,7 +609,7 @@ class _CameraModeScreenState extends State<CameraModeScreen> {
             Text(
               display,
               style: TextStyle(
-                color: AppConstants.accentColor.withOpacity(0.55),
+                color: AppConstants.accentColor.withValues(alpha: 0.55),
                 fontSize: 12,
                 fontWeight: FontWeight.w700,
               ),
@@ -618,7 +621,7 @@ class _CameraModeScreenState extends State<CameraModeScreen> {
             activeTrackColor: AppConstants.accentColor,
             inactiveTrackColor: AppConstants.borderColor,
             thumbColor: AppConstants.accentColor,
-            overlayColor: AppConstants.accentColor.withOpacity(0.1),
+            overlayColor: AppConstants.accentColor.withValues(alpha: 0.1),
             trackHeight: 4,
             thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 8),
           ),
@@ -653,7 +656,7 @@ class _CameraModeScreenState extends State<CameraModeScreen> {
             child: Text(
               label,
               style: TextStyle(
-                color: AppConstants.accentColor.withOpacity(0.7),
+                color: AppConstants.accentColor.withValues(alpha: 0.7),
                 fontSize: 13,
                 fontWeight: FontWeight.w600,
               ),
@@ -662,7 +665,7 @@ class _CameraModeScreenState extends State<CameraModeScreen> {
           Switch(
             value: value,
             onChanged: onChanged,
-            activeColor: AppConstants.accentColor,
+            activeThumbColor: AppConstants.accentColor,
           ),
         ],
       ),
@@ -687,7 +690,7 @@ class _CameraModeScreenState extends State<CameraModeScreen> {
             child: Text(
               label,
               style: TextStyle(
-                color: AppConstants.accentColor.withOpacity(0.7),
+                color: AppConstants.accentColor.withValues(alpha: 0.7),
                 fontSize: 13,
                 fontWeight: FontWeight.w700,
               ),
@@ -696,7 +699,7 @@ class _CameraModeScreenState extends State<CameraModeScreen> {
           Switch(
             value: value,
             onChanged: onChanged,
-            activeColor: AppConstants.accentColor,
+            activeThumbColor: AppConstants.accentColor,
           ),
         ],
       ),
@@ -722,7 +725,7 @@ class _CameraModeScreenState extends State<CameraModeScreen> {
             child: Text(
               label,
               style: TextStyle(
-                color: AppConstants.accentColor.withOpacity(0.7),
+                color: AppConstants.accentColor.withValues(alpha: 0.7),
                 fontSize: 13,
                 fontWeight: FontWeight.w700,
               ),

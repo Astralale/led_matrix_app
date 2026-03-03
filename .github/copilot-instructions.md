@@ -83,6 +83,10 @@ lib/
 ## Code Quality
 
 - Run `flutter analyze` before considering code complete — fix all warnings and errors.
+- **Never use deprecated APIs.** Always use the recommended replacement:
+  - `Color.withOpacity(x)` → `Color.withValues(alpha: x)`.
+  - `Switch(activeColor: …)` → `Switch(activeThumbColor: …)`.
+  - Check the Flutter/Dart deprecation notices and migrate proactively.
 - Prefer strong typing over `dynamic`. Avoid `dynamic` unless interfacing with untyped APIs.
 - Handle errors gracefully: use `try/catch` for I/O, network, and BLE operations.
 - Use `async/await` instead of raw `Future.then()` chains.

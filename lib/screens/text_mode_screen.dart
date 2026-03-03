@@ -144,10 +144,10 @@ class _TextModeScreenState extends State<TextModeScreen> {
           Container(
             padding: const EdgeInsets.all(7),
             decoration: BoxDecoration(
-              color: AppConstants.accentColor.withOpacity(0.08),
+              color: AppConstants.accentColor.withValues(alpha: 0.08),
               borderRadius: BorderRadius.circular(8),
               border: Border.all(
-                color: AppConstants.accentColor.withOpacity(0.2),
+                color: AppConstants.accentColor.withValues(alpha: 0.2),
               ),
             ),
             child: const Icon(
@@ -288,7 +288,7 @@ class _TextModeScreenState extends State<TextModeScreen> {
               size: 18,
               color: isActive
                   ? Colors.white
-                  : AppConstants.accentColor.withOpacity(0.3),
+                  : AppConstants.accentColor.withValues(alpha: 0.3),
             ),
             const SizedBox(width: 8),
             Text(
@@ -297,7 +297,7 @@ class _TextModeScreenState extends State<TextModeScreen> {
                 fontSize: 14,
                 color: isActive
                     ? Colors.white
-                    : AppConstants.accentColor.withOpacity(0.45),
+                    : AppConstants.accentColor.withValues(alpha: 0.45),
                 fontWeight: isActive ? FontWeight.w700 : FontWeight.w500,
               ),
             ),
@@ -312,7 +312,7 @@ class _TextModeScreenState extends State<TextModeScreen> {
       width: double.infinity,
       padding: const EdgeInsets.symmetric(vertical: 7),
       decoration: BoxDecoration(
-        color: AppConstants.accentColor.withOpacity(0.10),
+        color: AppConstants.accentColor.withValues(alpha: 0.10),
         borderRadius: const BorderRadius.vertical(
           top: Radius.circular(AppConstants.defaultRadius - 2),
         ),
@@ -425,7 +425,7 @@ class _TextModeScreenState extends State<TextModeScreen> {
           Text(
             'Couleur du texte',
             style: TextStyle(
-              color: AppConstants.accentColor.withOpacity(0.6),
+              color: AppConstants.accentColor.withValues(alpha: 0.6),
               fontSize: 12,
               fontWeight: FontWeight.w600,
               letterSpacing: 0.3,
@@ -484,7 +484,9 @@ class _TextModeScreenState extends State<TextModeScreen> {
                 icon: const Icon(Icons.delete_outline, size: 18),
                 label: const Text('Effacer', style: TextStyle(fontSize: 14)),
                 style: OutlinedButton.styleFrom(
-                  foregroundColor: AppConstants.accentColor.withOpacity(0.7),
+                  foregroundColor: AppConstants.accentColor.withValues(
+                    alpha: 0.7,
+                  ),
                   side: BorderSide(color: AppConstants.borderColor),
                 ),
               ),

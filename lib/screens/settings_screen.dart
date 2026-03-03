@@ -149,7 +149,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               child: Text(
                 'Annuler',
                 style: TextStyle(
-                  color: AppConstants.accentColor.withOpacity(0.7),
+                  color: AppConstants.accentColor.withValues(alpha: 0.7),
                 ),
               ),
             ),
@@ -265,7 +265,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       child: Text(
         title.toUpperCase(),
         style: TextStyle(
-          color: AppConstants.accentColor.withOpacity(0.5),
+          color: AppConstants.accentColor.withValues(alpha: 0.5),
           fontSize: 12,
           fontWeight: FontWeight.w700,
           letterSpacing: 1.2,
@@ -286,7 +286,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
         leading: Container(
           padding: const EdgeInsets.all(8),
           decoration: BoxDecoration(
-            color: AppConstants.accentColor.withOpacity(0.08),
+            color: AppConstants.accentColor.withValues(alpha: 0.08),
             borderRadius: BorderRadius.circular(8),
           ),
           child: const Icon(
@@ -306,13 +306,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
         subtitle: Text(
           _emergencyMessage,
           style: TextStyle(
-            color: AppConstants.accentColor.withOpacity(0.5),
+            color: AppConstants.accentColor.withValues(alpha: 0.5),
             fontSize: 13,
           ),
         ),
         trailing: Icon(
           Icons.chevron_right,
-          color: AppConstants.accentColor.withOpacity(0.4),
+          color: AppConstants.accentColor.withValues(alpha: 0.4),
         ),
         onTap: _editEmergencyMessage,
       ),
@@ -335,7 +335,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
             Container(
               padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
-                color: AppConstants.accentColor.withOpacity(0.08),
+                color: AppConstants.accentColor.withValues(alpha: 0.08),
                 borderRadius: BorderRadius.circular(8),
               ),
               child: const Icon(
@@ -361,7 +361,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   Text(
                     currentLabel,
                     style: TextStyle(
-                      color: AppConstants.accentColor.withOpacity(0.5),
+                      color: AppConstants.accentColor.withValues(alpha: 0.5),
                       fontSize: 13,
                     ),
                   ),
@@ -403,7 +403,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         style: TextStyle(
                           color: isSelected
                               ? Colors.white
-                              : AppConstants.accentColor.withOpacity(0.7),
+                              : AppConstants.accentColor.withValues(alpha: 0.7),
                           fontSize: 12,
                           fontWeight: isSelected
                               ? FontWeight.w700
@@ -444,7 +444,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
             Container(
               padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
-                color: AppConstants.accentColor.withOpacity(0.08),
+                color: AppConstants.accentColor.withValues(alpha: 0.08),
                 borderRadius: BorderRadius.circular(8),
               ),
               child: const Icon(
@@ -470,7 +470,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   Text(
                     currentLabel,
                     style: TextStyle(
-                      color: AppConstants.accentColor.withOpacity(0.5),
+                      color: AppConstants.accentColor.withValues(alpha: 0.5),
                       fontSize: 13,
                     ),
                   ),
@@ -512,7 +512,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         style: TextStyle(
                           color: isSelected
                               ? Colors.white
-                              : AppConstants.accentColor.withOpacity(0.7),
+                              : AppConstants.accentColor.withValues(alpha: 0.7),
                           fontSize: 12,
                           fontWeight: isSelected
                               ? FontWeight.w700
@@ -548,7 +548,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 Container(
                   padding: const EdgeInsets.all(8),
                   decoration: BoxDecoration(
-                    color: AppConstants.accentColor.withOpacity(0.08),
+                    color: AppConstants.accentColor.withValues(alpha: 0.08),
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: const Icon(
@@ -571,7 +571,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 Text(
                   '$percent %',
                   style: TextStyle(
-                    color: AppConstants.accentColor.withOpacity(0.5),
+                    color: AppConstants.accentColor.withValues(alpha: 0.5),
                     fontSize: 13,
                     fontWeight: FontWeight.w600,
                   ),
@@ -584,7 +584,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 activeTrackColor: AppConstants.accentColor,
                 inactiveTrackColor: AppConstants.borderColor,
                 thumbColor: AppConstants.accentColor,
-                overlayColor: AppConstants.accentColor.withOpacity(0.1),
+                overlayColor: AppConstants.accentColor.withValues(alpha: 0.1),
                 trackHeight: 4,
                 thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 8),
               ),
@@ -616,10 +616,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
     final error = _bleState == BleConnectionState.error;
 
     final Color iconBg = connected
-        ? AppConstants.successColor.withOpacity(0.12)
+        ? AppConstants.successColor.withValues(alpha: 0.12)
         : error
-        ? AppConstants.dangerColor.withOpacity(0.12)
-        : AppConstants.accentColor.withOpacity(0.08);
+        ? AppConstants.dangerColor.withValues(alpha: 0.12)
+        : AppConstants.accentColor.withValues(alpha: 0.08);
     final Color iconColor = connected
         ? AppConstants.successColor
         : error
@@ -678,7 +678,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
         subtitle: Text(
           subtitle,
           style: TextStyle(
-            color: AppConstants.accentColor.withOpacity(0.5),
+            color: AppConstants.accentColor.withValues(alpha: 0.5),
             fontSize: 13,
           ),
         ),
@@ -690,7 +690,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     : _isScanning
                     ? Icons.stop_circle_outlined
                     : Icons.search,
-                color: AppConstants.accentColor.withOpacity(0.4),
+                color: AppConstants.accentColor.withValues(alpha: 0.4),
                 size: 20,
               ),
         onTap: () {
@@ -740,7 +740,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 Text(
                   _isScanning ? 'Recherche en cours...' : 'Appareils trouvés',
                   style: TextStyle(
-                    color: AppConstants.accentColor.withOpacity(0.6),
+                    color: AppConstants.accentColor.withValues(alpha: 0.6),
                     fontSize: 12,
                     fontWeight: FontWeight.w700,
                     letterSpacing: 0.8,
@@ -755,7 +755,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               child: Text(
                 'Aucun appareil détecté pour l\'instant...',
                 style: TextStyle(
-                  color: AppConstants.accentColor.withOpacity(0.35),
+                  color: AppConstants.accentColor.withValues(alpha: 0.35),
                   fontSize: 13,
                 ),
               ),
@@ -774,7 +774,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     leading: Container(
                       padding: const EdgeInsets.all(6),
                       decoration: BoxDecoration(
-                        color: AppConstants.accentColor.withOpacity(0.07),
+                        color: AppConstants.accentColor.withValues(alpha: 0.07),
                         borderRadius: BorderRadius.circular(6),
                       ),
                       child: const Icon(
@@ -794,7 +794,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     subtitle: Text(
                       '${r.device.remoteId}  ·  ${r.rssi} dBm',
                       style: TextStyle(
-                        color: AppConstants.accentColor.withOpacity(0.4),
+                        color: AppConstants.accentColor.withValues(alpha: 0.4),
                         fontSize: 11,
                       ),
                     ),

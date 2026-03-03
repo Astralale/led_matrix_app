@@ -82,7 +82,7 @@ class LedMatrixApp extends StatelessWidget {
           }),
           trackColor: WidgetStateProperty.resolveWith((states) {
             if (states.contains(WidgetState.selected)) {
-              return AppConstants.accentColor.withOpacity(0.3);
+              return AppConstants.accentColor.withValues(alpha: 0.3);
             }
             return AppConstants.borderColor;
           }),

@@ -21,8 +21,7 @@ class MatrixPreview extends StatelessWidget {
   Widget build(BuildContext context) {
     return LayoutBuilder(
       builder: (context, constraints) {
-        final calculatedCellSize =
-            cellSize ?? _calculateCellSize(constraints);
+        final calculatedCellSize = cellSize ?? _calculateCellSize(constraints);
         final cellMargin = calculatedCellSize * 0.04;
         final actualCellSize = calculatedCellSize - (cellMargin * 2);
 
@@ -73,7 +72,7 @@ class MatrixPreview extends StatelessWidget {
         boxShadow: (isLit && showGlow)
             ? [
                 BoxShadow(
-                  color: color.withOpacity(0.5),
+                  color: color.withValues(alpha: 0.5),
                   blurRadius: cellSize * 0.3,
                   spreadRadius: 0,
                 ),
@@ -224,7 +223,7 @@ class _InteractiveMatrixPreviewState extends State<InteractiveMatrixPreview> {
         boxShadow: isLit
             ? [
                 BoxShadow(
-                  color: color.withOpacity(0.5),
+                  color: color.withValues(alpha: 0.5),
                   blurRadius: cellSize * 0.3,
                 ),
               ]

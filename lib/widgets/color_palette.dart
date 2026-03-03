@@ -49,7 +49,7 @@ class HorizontalColorPalette extends StatelessWidget {
                     ? [
                         BoxShadow(
                           color: AppConstants.colorPalette[colorIndex]
-                              .withOpacity(0.7),
+                              .withValues(alpha: 0.7),
                           blurRadius: 10,
                           spreadRadius: 2,
                         ),
@@ -128,7 +128,7 @@ class GridColorPalette extends StatelessWidget {
               boxShadow: isSelected && index != 0
                   ? [
                       BoxShadow(
-                        color: palette[index].withOpacity(0.5),
+                        color: palette[index].withValues(alpha: 0.5),
                         blurRadius: 4,
                       ),
                     ]

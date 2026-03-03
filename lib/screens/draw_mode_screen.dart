@@ -83,7 +83,7 @@ class _DrawModeScreenState extends State<DrawModeScreen> {
             width: double.infinity,
             padding: const EdgeInsets.symmetric(vertical: 10),
             decoration: BoxDecoration(
-              color: AppConstants.accentColor.withOpacity(0.06),
+              color: AppConstants.accentColor.withValues(alpha: 0.06),
               border: Border(
                 bottom: BorderSide(color: AppConstants.borderColor),
               ),
@@ -137,7 +137,7 @@ class _DrawModeScreenState extends State<DrawModeScreen> {
   Widget _buildDivider() {
     return Container(
       height: 1,
-      color: AppConstants.borderColor.withOpacity(0.6),
+      color: AppConstants.borderColor.withValues(alpha: 0.6),
     );
   }
 
@@ -177,7 +177,7 @@ class _DrawModeScreenState extends State<DrawModeScreen> {
         onPressed: _clearMatrix,
         style: TextButton.styleFrom(
           foregroundColor: AppConstants.dangerColor,
-          backgroundColor: AppConstants.dangerColor.withOpacity(0.07),
+          backgroundColor: AppConstants.dangerColor.withValues(alpha: 0.07),
           padding: const EdgeInsets.symmetric(horizontal: 4),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(AppConstants.smallRadius),
@@ -213,7 +213,7 @@ class _DrawModeScreenState extends State<DrawModeScreen> {
               width: double.infinity,
               padding: const EdgeInsets.symmetric(vertical: 7),
               decoration: BoxDecoration(
-                color: AppConstants.accentColor.withOpacity(0.10),
+                color: AppConstants.accentColor.withValues(alpha: 0.10),
                 borderRadius: const BorderRadius.vertical(
                   top: Radius.circular(AppConstants.defaultRadius - 2),
                 ),
