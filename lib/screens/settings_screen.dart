@@ -2,8 +2,11 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_blue_plus/flutter_blue_plus.dart';
+
 import '../config/constants.dart';
 import '../services/ble_service.dart';
+import '../services/esp32_cam_service.dart';
+import '../services/notification_service.dart';
 import '../services/storage_service.dart';
 import '../widgets/app_card.dart';
 import '../widgets/ble_status_indicator.dart';
@@ -36,6 +39,32 @@ class _SettingsScreenState extends State<SettingsScreen> {
   StreamSubscription<List<ScanResult>>? _scanSub;
   bool _isScanning = false;
   List<ScanResult> _foundDevices = [];
+
+  final _cam = Esp32CamService.instance;
+  int _camFramesize = 6;
+  int _camQuality = 12;
+  int _camBrightness = 0;
+  int _camContrast = 0;
+  int _camSaturation = 0;
+  bool _camAwb = true;
+  bool _camAec = true;
+  bool _camAgc = true;
+  bool _camNightMode = false;
+  bool _camLenc = true;
+  bool _camHMirror = false;
+  bool _camVFlip = false;
+
+  static const Map<int, String> _resolutions = {
+    10: 'UXGA (1600×1200)',
+    9: 'SVGA (800×600)',
+    8: 'XGA (1024×768)',
+    7: 'SXGA (1280×1024)',
+    6: 'VGA (640×480)',
+    5: 'CIF (352×288)',
+    4: 'QVGA (320×240)',
+    3: 'HQVGA (240×176)',
+    0: 'QQVGA (160×120)',
+  };
 
   static const Map<int, String> _speedOptions = {
     100: 'Lent',
@@ -204,6 +233,107 @@ class _SettingsScreenState extends State<SettingsScreen> {
           _buildSectionHeader('Sécurité'),
           const SizedBox(height: 8),
           _buildEmergencyTile(),
+          const SizedBox(height: 20),
+          _buildSectionHeader('Caméra — Capture'),
+          const SizedBox(height: 8),
+          _buildGroupedCard([
+            _buildCamResolutionContent(),
+            _buildCamQualityContent(),
+          ]),
+          const SizedBox(height: 20),
+          _buildSectionHeader('Caméra — Image'),
+          const SizedBox(height: 8),
+          _buildGroupedCard([
+            _buildCamSliderContent(
+              label: 'Luminosité',
+              icon: Icons.brightness_6,
+              value: _camBrightness,
+              min: -3,
+              max: 3,
+              onChanged: (v) => setState(() => _camBrightness = v),
+              onChangeEnd: (v) => _setCam('brightness', v),
+            ),
+            _buildCamSliderContent(
+              label: 'Contraste',
+              icon: Icons.contrast,
+              value: _camContrast,
+              min: -3,
+              max: 3,
+              onChanged: (v) => setState(() => _camContrast = v),
+              onChangeEnd: (v) => _setCam('contrast', v),
+            ),
+            _buildCamSliderContent(
+              label: 'Saturation',
+              icon: Icons.color_lens,
+              value: _camSaturation,
+              min: -4,
+              max: 4,
+              onChanged: (v) => setState(() => _camSaturation = v),
+              onChangeEnd: (v) => _setCam('saturation', v),
+            ),
+          ]),
+          const SizedBox(height: 20),
+          _buildSectionHeader('Caméra — Options'),
+          const SizedBox(height: 8),
+          _buildGroupedCard([
+            _buildCamSwitchContent(
+              label: 'AWB (balance des blancs auto)',
+              value: _camAwb,
+              onChanged: (v) {
+                setState(() => _camAwb = v);
+                _setCam('awb', v ? 1 : 0);
+              },
+            ),
+            _buildCamSwitchContent(
+              label: 'AEC (exposition auto)',
+              value: _camAec,
+              onChanged: (v) {
+                setState(() => _camAec = v);
+                _setCam('aec', v ? 1 : 0);
+              },
+            ),
+            _buildCamSwitchContent(
+              label: 'AGC (gain auto)',
+              value: _camAgc,
+              onChanged: (v) {
+                setState(() => _camAgc = v);
+                _setCam('agc', v ? 1 : 0);
+              },
+            ),
+            _buildCamSwitchContent(
+              label: 'Night mode',
+              value: _camNightMode,
+              onChanged: (v) {
+                setState(() => _camNightMode = v);
+                _setCam('aec2', v ? 1 : 0);
+              },
+            ),
+            _buildCamSwitchContent(
+              label: 'Lens correction',
+              value: _camLenc,
+              onChanged: (v) {
+                setState(() => _camLenc = v);
+                _setCam('lenc', v ? 1 : 0);
+              },
+            ),
+            _buildCamSwitchContent(
+              label: 'H-Mirror',
+              value: _camHMirror,
+              onChanged: (v) {
+                setState(() => _camHMirror = v);
+                _setCam('hmirror', v ? 1 : 0);
+              },
+            ),
+            _buildCamSwitchContent(
+              label: 'V-Flip',
+              value: _camVFlip,
+              onChanged: (v) {
+                setState(() => _camVFlip = v);
+                _setCam('vflip', v ? 1 : 0);
+              },
+            ),
+          ]),
+          const SizedBox(height: 20),
         ],
       ),
     );
@@ -576,6 +706,230 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 widget.onSettingsChanged?.call(brightness: b);
               },
             ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _setCam(String varName, int value) async {
+    try {
+      await _cam.setVar(varName, value);
+    } catch (_) {
+      if (!mounted) return;
+      NotificationService.showError(
+        'Échec envoi réglage caméra (ESP32 non joignable ?)',
+      );
+    }
+  }
+
+  Widget _buildCamResolutionContent() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: AppConstants.accentColor.withValues(alpha: 0.08),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: const Icon(
+              Icons.aspect_ratio,
+              color: AppConstants.accentColor,
+              size: 22,
+            ),
+          ),
+          const SizedBox(width: 16),
+          Expanded(
+            child: Text(
+              'Résolution',
+              style: const TextStyle(
+                color: AppConstants.accentColor,
+                fontSize: 15,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+          DropdownButton<int>(
+            value: _camFramesize,
+            underline: const SizedBox.shrink(),
+            dropdownColor: AppConstants.surfaceColor,
+            style: TextStyle(
+              color: AppConstants.accentColor,
+              fontWeight: FontWeight.w600,
+              fontSize: 13,
+            ),
+            items: _resolutions.entries
+                .map(
+                  (e) =>
+                      DropdownMenuItem<int>(value: e.key, child: Text(e.value)),
+                )
+                .toList(),
+            onChanged: (v) {
+              if (v == null) return;
+              setState(() => _camFramesize = v);
+              _setCam('framesize', v);
+            },
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildCamQualityContent() {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: AppConstants.accentColor.withValues(alpha: 0.08),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: const Icon(
+                  Icons.high_quality,
+                  color: AppConstants.accentColor,
+                  size: 22,
+                ),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Text(
+                  'Qualité JPEG',
+                  style: const TextStyle(
+                    color: AppConstants.accentColor,
+                    fontSize: 15,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+              Text(
+                '$_camQuality',
+                style: TextStyle(
+                  color: AppConstants.accentColor.withValues(alpha: 0.5),
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ],
+          ),
+          SliderTheme(
+            data: SliderThemeData(
+              activeTrackColor: AppConstants.accentColor,
+              inactiveTrackColor: AppConstants.borderColor,
+              thumbColor: AppConstants.accentColor,
+              overlayColor: AppConstants.accentColor.withValues(alpha: 0.1),
+              trackHeight: 4,
+              thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 8),
+            ),
+            child: Slider(
+              value: _camQuality.toDouble(),
+              min: 4,
+              max: 63,
+              onChanged: (v) => setState(() => _camQuality = v.round()),
+              onChangeEnd: (v) => _setCam('quality', v.round()),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildCamSliderContent({
+    required String label,
+    required IconData icon,
+    required int value,
+    required int min,
+    required int max,
+    required ValueChanged<int> onChanged,
+    required ValueChanged<int> onChangeEnd,
+  }) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: AppConstants.accentColor.withValues(alpha: 0.08),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Icon(icon, color: AppConstants.accentColor, size: 22),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Text(
+                  label,
+                  style: const TextStyle(
+                    color: AppConstants.accentColor,
+                    fontSize: 15,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+              Text(
+                '$value',
+                style: TextStyle(
+                  color: AppConstants.accentColor.withValues(alpha: 0.5),
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ],
+          ),
+          SliderTheme(
+            data: SliderThemeData(
+              activeTrackColor: AppConstants.accentColor,
+              inactiveTrackColor: AppConstants.borderColor,
+              thumbColor: AppConstants.accentColor,
+              overlayColor: AppConstants.accentColor.withValues(alpha: 0.1),
+              trackHeight: 4,
+              thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 8),
+            ),
+            child: Slider(
+              value: value.toDouble(),
+              min: min.toDouble(),
+              max: max.toDouble(),
+              onChanged: (v) => onChanged(v.round()),
+              onChangeEnd: (v) => onChangeEnd(v.round()),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildCamSwitchContent({
+    required String label,
+    required bool value,
+    required ValueChanged<bool> onChanged,
+  }) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+      child: Row(
+        children: [
+          Expanded(
+            child: Text(
+              label,
+              style: TextStyle(
+                color: AppConstants.accentColor.withValues(alpha: 0.7),
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+          Switch(
+            value: value,
+            onChanged: onChanged,
+            activeThumbColor: AppConstants.accentColor,
           ),
         ],
       ),
