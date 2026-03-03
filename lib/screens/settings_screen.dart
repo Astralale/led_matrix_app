@@ -165,34 +165,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
         preferredSize: const Size.fromHeight(1),
         child: Container(height: 1, color: AppConstants.borderColor),
       ),
-      title: Row(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(7),
-            decoration: BoxDecoration(
-              color: AppConstants.accentColor.withOpacity(0.08),
-              borderRadius: BorderRadius.circular(8),
-              border: Border.all(
-                color: AppConstants.accentColor.withOpacity(0.2),
-              ),
-            ),
-            child: const Icon(
-              Icons.settings,
-              color: AppConstants.accentColor,
-              size: 20,
-            ),
-          ),
-          const SizedBox(width: 12),
-          const Text(
-            'Paramètres',
-            style: TextStyle(
-              fontWeight: FontWeight.bold,
-              fontSize: 18,
-              color: AppConstants.accentColor,
-              letterSpacing: 0.5,
-            ),
-          ),
-        ],
+      title: const Text(
+        'Paramètres',
+        style: TextStyle(
+          fontWeight: FontWeight.bold,
+          fontSize: 18,
+          color: AppConstants.accentColor,
+          letterSpacing: 0.5,
+        ),
       ),
     );
   }
