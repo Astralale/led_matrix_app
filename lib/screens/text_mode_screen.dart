@@ -381,7 +381,7 @@ class _TextModeScreenState extends State<TextModeScreen> {
           ),
           const SizedBox(width: 12),
           const Text(
-            'Collection femmes',
+            'Femmes',
             style: TextStyle(
               fontWeight: FontWeight.bold,
               fontSize: 18,
@@ -409,37 +409,19 @@ class _TextModeScreenState extends State<TextModeScreen> {
           ),
         ),
         Padding(
-          padding: const EdgeInsets.only(right: 4),
-          child: ElevatedButton.icon(
-            onPressed: _openSettings,
-            icon: const Icon(Icons.settings, size: 16),
-            label: const Text('Paramètres', style: TextStyle(fontSize: 13)),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppConstants.borderColor,
-              foregroundColor: AppConstants.accentColor,
-              elevation: 0,
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(AppConstants.defaultRadius),
-              ),
-            ),
-          ),
-        ),
-        Padding(
           padding: const EdgeInsets.only(right: 8),
-          child: ElevatedButton.icon(
-            onPressed: _openDrawMode,
-            icon: const Icon(Icons.brush, size: 16),
-            label: const Text('Dessiner', style: TextStyle(fontSize: 13)),
+          child: ElevatedButton(
+            onPressed: _openSettings,
             style: ElevatedButton.styleFrom(
               backgroundColor: AppConstants.borderColor,
               foregroundColor: AppConstants.accentColor,
               elevation: 0,
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(AppConstants.defaultRadius),
               ),
             ),
+            child: const Icon(Icons.settings, size: 16),
           ),
         ),
       ],
@@ -575,25 +557,54 @@ class _TextModeScreenState extends State<TextModeScreen> {
       padding: const EdgeInsets.symmetric(
         horizontal: AppConstants.defaultPadding,
       ),
-      child: TextField(
-        controller: _textController,
-        style: const TextStyle(color: Color(0xFF1A1A1A), fontSize: 16),
-        decoration: InputDecoration(
-          hintText: 'Entrez votre texte...',
-          hintStyle: TextStyle(color: Colors.grey.shade400),
-          filled: true,
-          fillColor: AppConstants.surfaceColor,
-          prefixIcon: const Icon(
-            Icons.text_fields,
-            color: AppConstants.accentColor,
-            size: 20,
-          ),
-          suffixIcon: IconButton(
-            icon: Icon(Icons.clear, color: Colors.grey.shade400, size: 20),
-            onPressed: () => _textController.clear(),
-          ),
+      child: IntrinsicHeight(
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Expanded(
+              child: TextField(
+                controller: _textController,
+                style: const TextStyle(color: Color(0xFF1A1A1A), fontSize: 16),
+                decoration: InputDecoration(
+                  hintText: 'Entrez votre texte...',
+                  hintStyle: TextStyle(color: Colors.grey.shade400),
+                  filled: true,
+                  fillColor: AppConstants.surfaceColor,
+                  prefixIcon: const Icon(
+                    Icons.text_fields,
+                    color: AppConstants.accentColor,
+                    size: 20,
+                  ),
+                  suffixIcon: IconButton(
+                    icon: Icon(
+                      Icons.clear,
+                      color: Colors.grey.shade400,
+                      size: 20,
+                    ),
+                    onPressed: () => _textController.clear(),
+                  ),
+                ),
+                onSubmitted: (_) => _applyText(),
+              ),
+            ),
+            const SizedBox(width: 8),
+            ElevatedButton(
+              onPressed: _openDrawMode,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppConstants.borderColor,
+                foregroundColor: AppConstants.accentColor,
+                elevation: 0,
+                padding: const EdgeInsets.symmetric(horizontal: 14),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(
+                    AppConstants.defaultRadius,
+                  ),
+                ),
+              ),
+              child: const Icon(Icons.brush, size: 20),
+            ),
+          ],
         ),
-        onSubmitted: (_) => _applyText(),
       ),
     );
   }
