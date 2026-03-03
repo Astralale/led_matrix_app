@@ -35,6 +35,13 @@ class _TextModeScreenState extends State<TextModeScreen> {
   // Draw scroll
   List<List<int>>? _scrollSnapshot;
 
+  // Blink animation
+  Timer? _blinkTimer;
+  bool _blinkEnabled = false;
+  bool _blinkVisible = true;
+  List<List<int>>? _blinkSnapshot;
+  static const int _blinkIntervalMs = 500;
+
   String _emergencyMessage = 'HELP';
   int _brightness = 60;
 
@@ -50,6 +57,7 @@ class _TextModeScreenState extends State<TextModeScreen> {
   @override
   void dispose() {
     _scrollTimer?.cancel();
+    _blinkTimer?.cancel();
     _textController.dispose();
     super.dispose();
   }
@@ -178,6 +186,7 @@ class _TextModeScreenState extends State<TextModeScreen> {
 
   void _clearMatrix() {
     _stopScrollingAndReset();
+    _stopBlinking();
     setState(() {
       _matrix.clear();
     });
@@ -186,6 +195,7 @@ class _TextModeScreenState extends State<TextModeScreen> {
 
   void _displayHelp() {
     _stopScrollingAndReset();
+    _stopBlinking();
     _textController.text = _emergencyMessage.toLowerCase();
     const helpColor = 1;
     final text = _emergencyMessage.toUpperCase();
@@ -246,6 +256,51 @@ class _TextModeScreenState extends State<TextModeScreen> {
     }
   }
 
+  void _toggleBlink(bool value) {
+    if (value) {
+      _blinkSnapshot = _matrix.pixels.map((r) => List<int>.from(r)).toList();
+      _blinkVisible = true;
+      setState(() => _blinkEnabled = true);
+      _blinkTimer?.cancel();
+      _blinkTimer = Timer.periodic(
+        const Duration(milliseconds: _blinkIntervalMs),
+        (_) {
+          setState(() {
+            _blinkVisible = !_blinkVisible;
+            if (_blinkVisible) {
+              _matrix.updateFrom(
+                _blinkSnapshot!.map((r) => List<int>.from(r)).toList(),
+              );
+            } else {
+              _matrix.clear();
+            }
+          });
+          _sendCurrentMatrix();
+        },
+      );
+    } else {
+      _stopBlinking();
+      if (_blinkSnapshot != null) {
+        setState(() {
+          _matrix.updateFrom(_blinkSnapshot!);
+        });
+        _blinkSnapshot = null;
+        _sendCurrentMatrix();
+      }
+    }
+  }
+
+  void _stopBlinking() {
+    _blinkTimer?.cancel();
+    _blinkTimer = null;
+    if (_blinkEnabled) {
+      setState(() {
+        _blinkEnabled = false;
+        _blinkVisible = true;
+      });
+    }
+  }
+
   Future<void> _openDrawMode() async {
     _stopScrollingAndReset();
     final result = await Navigator.push<List<List<int>>>(
@@ -288,7 +343,7 @@ class _TextModeScreenState extends State<TextModeScreen> {
 
           const SizedBox(height: 10),
 
-          _buildScrollToggle(),
+          _buildEffectToggles(),
 
           const SizedBox(height: 10),
 
@@ -379,67 +434,80 @@ class _TextModeScreenState extends State<TextModeScreen> {
     );
   }
 
-  Widget _buildScrollToggle() {
+  Widget _buildEffectToggles() {
     return Padding(
       padding: const EdgeInsets.symmetric(
         horizontal: AppConstants.defaultPadding,
       ),
-      child: GestureDetector(
-        onTap: () => _toggleScroll(!_scrollEnabled),
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 200),
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-          decoration: BoxDecoration(
-            color: _scrollEnabled
-                ? AppConstants.accentColor.withOpacity(0.06)
-                : AppConstants.surfaceColor,
-            borderRadius: BorderRadius.circular(AppConstants.defaultRadius),
-            border: Border.all(
-              color: _scrollEnabled
-                  ? AppConstants.accentColor.withOpacity(0.5)
-                  : AppConstants.borderColor,
-              width: 1,
+      child: Row(
+        children: [
+          Expanded(
+            child: _buildEffectButton(
+              icon: Icons.animation,
+              label: 'Défilement',
+              isActive: _scrollEnabled,
+              onTap: () => _toggleScroll(!_scrollEnabled),
             ),
           ),
-          child: Row(
-            children: [
-              Icon(
-                Icons.animation,
-                size: 18,
-                color: _scrollEnabled
-                    ? AppConstants.accentColor
-                    : AppConstants.accentColor.withOpacity(0.3),
-              ),
-              const SizedBox(width: 8),
-              Text(
-                'Défilement',
-                style: TextStyle(
-                  fontSize: 15,
-                  color: _scrollEnabled
-                      ? AppConstants.accentColor
-                      : AppConstants.accentColor.withOpacity(0.55),
-                  fontWeight: _scrollEnabled
-                      ? FontWeight.w600
-                      : FontWeight.normal,
-                ),
-              ),
-              const Spacer(),
-              Switch(
-                value: _scrollEnabled,
-                onChanged: _toggleScroll,
-                materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                activeColor: Colors.white,
-                activeTrackColor: AppConstants.accentColor,
-                inactiveThumbColor: AppConstants.borderColor,
-                inactiveTrackColor: AppConstants.surfaceColor,
-                trackOutlineColor: WidgetStateProperty.resolveWith(
-                  (states) => states.contains(WidgetState.selected)
-                      ? AppConstants.accentColor
-                      : AppConstants.borderColor,
-                ),
-              ),
-            ],
+          const SizedBox(width: 8),
+          Expanded(
+            child: _buildEffectButton(
+              icon: Icons.flash_on,
+              label: 'Clignotement',
+              isActive: _blinkEnabled,
+              onTap: () => _toggleBlink(!_blinkEnabled),
+            ),
           ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildEffectButton({
+    required IconData icon,
+    required String label,
+    required bool isActive,
+    required VoidCallback onTap,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+        decoration: BoxDecoration(
+          color: isActive
+              ? AppConstants.accentColor
+              : AppConstants.surfaceColor,
+          borderRadius: BorderRadius.circular(AppConstants.defaultRadius),
+          border: Border.all(
+            color: isActive
+                ? AppConstants.accentColor
+                : AppConstants.borderColor,
+            width: 1,
+          ),
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              icon,
+              size: 18,
+              color: isActive
+                  ? Colors.white
+                  : AppConstants.accentColor.withOpacity(0.3),
+            ),
+            const SizedBox(width: 8),
+            Text(
+              label,
+              style: TextStyle(
+                fontSize: 14,
+                color: isActive
+                    ? Colors.white
+                    : AppConstants.accentColor.withOpacity(0.45),
+                fontWeight: isActive ? FontWeight.w700 : FontWeight.w500,
+              ),
+            ),
+          ],
         ),
       ),
     );
