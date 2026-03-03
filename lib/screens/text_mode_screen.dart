@@ -338,7 +338,7 @@ class _TextModeScreenState extends State<TextModeScreen> {
                 size: 18,
                 color: _scrollEnabled
                     ? AppConstants.accentColor
-                    : Colors.grey.shade400,
+                    : AppConstants.borderColor,
               ),
               const SizedBox(width: 8),
               Text(
@@ -358,6 +358,15 @@ class _TextModeScreenState extends State<TextModeScreen> {
                 value: _scrollEnabled,
                 onChanged: _toggleScroll,
                 materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                activeColor: Colors.white,
+                activeTrackColor: AppConstants.accentColor,
+                inactiveThumbColor: AppConstants.borderColor,
+                inactiveTrackColor: AppConstants.surfaceColor,
+                trackOutlineColor: WidgetStateProperty.resolveWith(
+                  (states) => states.contains(WidgetState.selected)
+                      ? AppConstants.accentColor
+                      : AppConstants.borderColor,
+                ),
               ),
             ],
           ),
