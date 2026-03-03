@@ -3,8 +3,13 @@ import '../config/constants.dart';
 
 class SettingsScreen extends StatefulWidget {
   final String emergencyMessage;
+  final int scrollSpeedMs;
 
-  const SettingsScreen({super.key, required this.emergencyMessage});
+  const SettingsScreen({
+    super.key,
+    required this.emergencyMessage,
+    required this.scrollSpeedMs,
+  });
 
   @override
   State<SettingsScreen> createState() => _SettingsScreenState();
@@ -12,11 +17,26 @@ class SettingsScreen extends StatefulWidget {
 
 class _SettingsScreenState extends State<SettingsScreen> {
   late String _emergencyMessage;
+  late int _scrollSpeedMs;
+
+  static const Map<int, String> _speedOptions = {
+    100: 'Lent',
+    60: 'Normal',
+    30: 'Rapide',
+  };
 
   @override
   void initState() {
     super.initState();
     _emergencyMessage = widget.emergencyMessage;
+    _scrollSpeedMs = widget.scrollSpeedMs;
+  }
+
+  Map<String, dynamic> _buildResult() {
+    return {
+      'emergencyMessage': _emergencyMessage,
+      'scrollSpeedMs': _scrollSpeedMs,
+    };
   }
 
   Future<void> _editEmergencyMessage() async {
@@ -100,7 +120,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       canPop: false,
       onPopInvokedWithResult: (didPop, result) {
         if (!didPop) {
-          Navigator.pop(context, _emergencyMessage);
+          Navigator.pop(context, _buildResult());
         }
       },
       child: Scaffold(
@@ -112,6 +132,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
             _buildSectionHeader('Urgence'),
             const SizedBox(height: 8),
             _buildEmergencyTile(),
+            const SizedBox(height: 20),
+            _buildSectionHeader('Défilement'),
+            const SizedBox(height: 8),
+            _buildScrollSpeedTile(),
           ],
         ),
       ),
@@ -125,7 +149,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       surfaceTintColor: Colors.transparent,
       leading: IconButton(
         icon: const Icon(Icons.arrow_back, color: AppConstants.accentColor),
-        onPressed: () => Navigator.pop(context, _emergencyMessage),
+        onPressed: () => Navigator.pop(context, _buildResult()),
       ),
       bottom: PreferredSize(
         preferredSize: const Size.fromHeight(1),
@@ -219,6 +243,105 @@ class _SettingsScreenState extends State<SettingsScreen> {
           color: AppConstants.accentColor.withOpacity(0.4),
         ),
         onTap: _editEmergencyMessage,
+      ),
+    );
+  }
+
+  Widget _buildScrollSpeedTile() {
+    final currentLabel = _speedOptions[_scrollSpeedMs] ?? '${_scrollSpeedMs}ms';
+
+    return Container(
+      decoration: BoxDecoration(
+        color: AppConstants.surfaceColor,
+        borderRadius: BorderRadius.circular(AppConstants.defaultRadius),
+        border: Border.all(color: AppConstants.borderColor),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        child: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: AppConstants.accentColor.withOpacity(0.08),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: const Icon(
+                Icons.speed,
+                color: AppConstants.accentColor,
+                size: 22,
+              ),
+            ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'Vitesse de défilement',
+                    style: TextStyle(
+                      color: AppConstants.accentColor,
+                      fontSize: 15,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    currentLabel,
+                    style: TextStyle(
+                      color: AppConstants.accentColor.withOpacity(0.5),
+                      fontSize: 13,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            Row(
+              mainAxisSize: MainAxisSize.min,
+              children: _speedOptions.entries.map((entry) {
+                final isSelected = _scrollSpeedMs == entry.key;
+                return Padding(
+                  padding: const EdgeInsets.only(left: 6),
+                  child: GestureDetector(
+                    onTap: () => setState(() => _scrollSpeedMs = entry.key),
+                    child: AnimatedContainer(
+                      duration: const Duration(milliseconds: 150),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 6,
+                      ),
+                      decoration: BoxDecoration(
+                        color: isSelected
+                            ? AppConstants.accentColor
+                            : AppConstants.backgroundColor,
+                        borderRadius: BorderRadius.circular(
+                          AppConstants.smallRadius,
+                        ),
+                        border: Border.all(
+                          color: isSelected
+                              ? AppConstants.accentColor
+                              : AppConstants.borderColor,
+                        ),
+                      ),
+                      child: Text(
+                        entry.value,
+                        style: TextStyle(
+                          color: isSelected
+                              ? Colors.white
+                              : AppConstants.accentColor.withOpacity(0.7),
+                          fontSize: 12,
+                          fontWeight: isSelected
+                              ? FontWeight.w700
+                              : FontWeight.w500,
+                        ),
+                      ),
+                    ),
+                  ),
+                );
+              }).toList(),
+            ),
+          ],
+        ),
       ),
     );
   }

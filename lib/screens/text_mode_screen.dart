@@ -30,7 +30,7 @@ class _TextModeScreenState extends State<TextModeScreen> {
   String _currentText = '';
   bool _isScrolling = false;
   bool _scrollEnabled = false;
-  static const int _scrollSpeedMs = 60;
+  int _scrollSpeedMs = 60;
 
   // Draw scroll
   List<List<int>>? _scrollSnapshot;
@@ -95,26 +95,25 @@ class _TextModeScreenState extends State<TextModeScreen> {
 
   void _startScrolling() {
     _isScrolling = true;
-    _scrollTimer = Timer.periodic(
-      const Duration(milliseconds: _scrollSpeedMs),
-      (timer) {
-        final textWidth = TextRenderer.getTextWidth(_currentText);
-        setState(() {
-          TextRenderer.drawText(
-            _matrix,
-            _currentText,
-            colorIndex: _selectedColorIndex,
-            startX: _scrollOffset,
-          );
-          _scrollOffset--;
-          // Loop: restart from the right once the text is fully off-screen
-          if (_scrollOffset + textWidth < 0) {
-            _scrollOffset = AppConstants.matrixWidth;
-          }
-        });
-        _sendCurrentMatrix();
-      },
-    );
+    _scrollTimer = Timer.periodic(Duration(milliseconds: _scrollSpeedMs), (
+      timer,
+    ) {
+      final textWidth = TextRenderer.getTextWidth(_currentText);
+      setState(() {
+        TextRenderer.drawText(
+          _matrix,
+          _currentText,
+          colorIndex: _selectedColorIndex,
+          startX: _scrollOffset,
+        );
+        _scrollOffset--;
+        // Loop: restart from the right once the text is fully off-screen
+        if (_scrollOffset + textWidth < 0) {
+          _scrollOffset = AppConstants.matrixWidth;
+        }
+      });
+      _sendCurrentMatrix();
+    });
   }
 
   void _stopScrolling() {
@@ -168,23 +167,20 @@ class _TextModeScreenState extends State<TextModeScreen> {
     int offset = 0;
     _isScrolling = true;
     _scrollTimer?.cancel();
-    _scrollTimer = Timer.periodic(
-      const Duration(milliseconds: _scrollSpeedMs),
-      (_) {
-        offset++;
-        final w = AppConstants.matrixWidth;
-        final h = AppConstants.matrixHeight;
-        final snap = _scrollSnapshot!;
-        setState(() {
-          for (int y = 0; y < h; y++) {
-            for (int x = 0; x < w; x++) {
-              _matrix.setPixel(x, y, snap[y][(x + offset) % w]);
-            }
+    _scrollTimer = Timer.periodic(Duration(milliseconds: _scrollSpeedMs), (_) {
+      offset++;
+      final w = AppConstants.matrixWidth;
+      final h = AppConstants.matrixHeight;
+      final snap = _scrollSnapshot!;
+      setState(() {
+        for (int y = 0; y < h; y++) {
+          for (int x = 0; x < w; x++) {
+            _matrix.setPixel(x, y, snap[y][(x + offset) % w]);
           }
-        });
-        _sendCurrentMatrix();
-      },
-    );
+        }
+      });
+      _sendCurrentMatrix();
+    });
   }
 
   void _clearMatrix() {
@@ -215,18 +211,40 @@ class _TextModeScreenState extends State<TextModeScreen> {
   }
 
   Future<void> _openSettings() async {
-    final result = await Navigator.push<String>(
+    final result = await Navigator.push<Map<String, dynamic>>(
       context,
       MaterialPageRoute(
-        builder: (context) =>
-            SettingsScreen(emergencyMessage: _emergencyMessage),
+        builder: (context) => SettingsScreen(
+          emergencyMessage: _emergencyMessage,
+          scrollSpeedMs: _scrollSpeedMs,
+        ),
       ),
     );
 
-    if (result != null && result.isNotEmpty) {
+    if (result != null) {
       setState(() {
-        _emergencyMessage = result.toUpperCase();
+        final msg = result['emergencyMessage'] as String?;
+        if (msg != null && msg.isNotEmpty) {
+          _emergencyMessage = msg.toUpperCase();
+        }
+        final speed = result['scrollSpeedMs'] as int?;
+        if (speed != null) {
+          _scrollSpeedMs = speed;
+          if (_isScrolling) {
+            _restartActiveScroll();
+          }
+        }
       });
+    }
+  }
+
+  void _restartActiveScroll() {
+    if (_scrollSnapshot != null) {
+      _stopScrolling();
+      _startDrawScroll();
+    } else if (_currentText.isNotEmpty) {
+      _stopScrolling();
+      _startScrolling();
     }
   }
 
