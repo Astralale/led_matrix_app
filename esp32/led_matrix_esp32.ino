@@ -25,17 +25,23 @@ struct RGB {
     uint8_t r, g, b;
 };
 
-const RGB PALETTE[10] = {
-        { 0, 0, 0 },
-        { 255, 0, 0 },
-        { 0, 255, 0 },
-        { 0, 0, 255 },
-        { 255, 255, 0 },
-        { 255, 0, 255 },
-        { 0, 255, 255 },
-        { 255, 255, 255 },
-        { 255, 136, 0 },
-        { 136, 0, 255 },
+const RGB PALETTE[16] = {
+        { 0, 0, 0 },       // 0  - Eteint
+        { 255, 0, 0 },     // 1  - Rouge
+        { 0, 255, 0 },     // 2  - Vert
+        { 0, 0, 255 },     // 3  - Bleu
+        { 255, 255, 0 },   // 4  - Jaune
+        { 255, 0, 255 },   // 5  - Magenta
+        { 0, 255, 255 },   // 6  - Cyan
+        { 255, 255, 255 }, // 7  - Blanc
+        { 255, 136, 0 },   // 8  - Orange
+        { 136, 0, 255 },   // 9  - Violet
+        { 255, 20, 147 },  // 10 - Rose
+        { 255, 68, 0 },    // 11 - Rouge-orange
+        { 128, 255, 0 },   // 12 - Vert lime
+        { 0, 170, 255 },   // 13 - Bleu ciel
+        { 255, 215, 0 },   // 14 - Or
+        { 0, 255, 176 },   // 15 - Turquoise
 };
 
 uint8_t matrix[HEIGHT][WIDTH] = {0};
@@ -64,7 +70,7 @@ class ServerCallbacks : public BLEServerCallbacks {
 
 class CharacteristicCallbacks : public BLECharacteristicCallbacks {
     void onWrite(BLECharacteristic* pCharacteristic) {
-        String value = pCharacteristic->getValue();
+        std::string value = pCharacteristic->getValue();
         int len = value.length();
 
         Serial.print("Chunk recu: ");
@@ -88,7 +94,7 @@ class CharacteristicCallbacks : public BLECharacteristicCallbacks {
             for (int y = 0; y < HEIGHT; y++) {
                 for (int x = 0; x < WIDTH; x++) {
                     matrix[y][x] = rxBuffer[2 + y * WIDTH + x];
-                    if (matrix[y][x] > 9) matrix[y][x] = 0;
+                    if (matrix[y][x] > 15) matrix[y][x] = 0;
                 }
             }
             newMatrixReady = true;
@@ -134,7 +140,7 @@ void displayMatrix() {
         for (int x = 0; x < WIDTH; x++) {
             uint8_t colorIndex = matrix[y][x];
             if (colorIndex == 0) continue;
-            if (colorIndex > 9) colorIndex = 0;
+            if (colorIndex > 15) colorIndex = 0;
 
             RGB c = PALETTE[colorIndex];
 
