@@ -185,7 +185,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       body: ListView(
         padding: const EdgeInsets.all(AppConstants.defaultPadding),
         children: [
-          _buildSectionHeader('Bluetooth'),
+          _buildSectionHeader('Connexion'),
           const SizedBox(height: 8),
           _buildBluetoothTile(),
           if (_foundDevices.isNotEmpty || _isScanning) ...[
@@ -193,21 +193,17 @@ class _SettingsScreenState extends State<SettingsScreen> {
             _buildDeviceList(),
           ],
           const SizedBox(height: 20),
-          _buildSectionHeader('Urgence'),
-          const SizedBox(height: 8),
-          _buildEmergencyTile(),
-          const SizedBox(height: 20),
-          _buildSectionHeader('Défilement'),
-          const SizedBox(height: 8),
-          _buildScrollSpeedTile(),
-          const SizedBox(height: 20),
-          _buildSectionHeader('Clignotement'),
-          const SizedBox(height: 8),
-          _buildBlinkSpeedTile(),
-          const SizedBox(height: 20),
           _buildSectionHeader('Panneau LED'),
           const SizedBox(height: 8),
-          _buildBrightnessTile(),
+          _buildGroupedCard([
+            _buildBrightnessContent(),
+            _buildScrollSpeedContent(),
+            _buildBlinkSpeedContent(),
+          ]),
+          const SizedBox(height: 20),
+          _buildSectionHeader('Sécurité'),
+          const SizedBox(height: 8),
+          _buildEmergencyTile(),
         ],
       ),
     );
@@ -256,6 +252,25 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
+  Widget _buildGroupedCard(List<Widget> children) {
+    return AppCard(
+      child: Column(
+        children: [
+          for (int i = 0; i < children.length; i++) ...[
+            children[i],
+            if (i < children.length - 1)
+              Divider(
+                height: 1,
+                indent: 16,
+                endIndent: 16,
+                color: AppConstants.borderColor,
+              ),
+          ],
+        ],
+      ),
+    );
+  }
+
   Widget _buildEmergencyTile() {
     return AppCard(
       child: ListTile(
@@ -296,100 +311,98 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
-  Widget _buildScrollSpeedTile() {
+  Widget _buildScrollSpeedContent() {
     final currentLabel = _speedOptions[_scrollSpeedMs] ?? '${_scrollSpeedMs}ms';
 
-    return AppCard(
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-        child: Row(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: AppConstants.accentColor.withValues(alpha: 0.08),
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: const Icon(
-                Icons.speed,
-                color: AppConstants.accentColor,
-                size: 22,
-              ),
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: AppConstants.accentColor.withValues(alpha: 0.08),
+              borderRadius: BorderRadius.circular(8),
             ),
-            const SizedBox(width: 16),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text(
-                    'Vitesse de défilement',
-                    style: TextStyle(
-                      color: AppConstants.accentColor,
-                      fontSize: 15,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                  const SizedBox(height: 2),
-                  Text(
-                    currentLabel,
-                    style: TextStyle(
-                      color: AppConstants.accentColor.withValues(alpha: 0.5),
-                      fontSize: 13,
-                    ),
-                  ),
-                ],
-              ),
+            child: const Icon(
+              Icons.speed,
+              color: AppConstants.accentColor,
+              size: 22,
             ),
-            Row(
-              mainAxisSize: MainAxisSize.min,
-              children: _speedOptions.entries.map((entry) {
-                final isSelected = _scrollSpeedMs == entry.key;
-                return Padding(
-                  padding: const EdgeInsets.only(left: 6),
-                  child: GestureDetector(
-                    onTap: () {
-                      setState(() => _scrollSpeedMs = entry.key);
-                      StorageService.instance.scrollSpeedMs = entry.key;
-                      widget.onSettingsChanged?.call(scrollSpeedMs: entry.key);
-                    },
-                    child: AnimatedContainer(
-                      duration: const Duration(milliseconds: 150),
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 12,
-                        vertical: 6,
+          ),
+          const SizedBox(width: 16),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'Vitesse de défilement',
+                  style: TextStyle(
+                    color: AppConstants.accentColor,
+                    fontSize: 15,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  currentLabel,
+                  style: TextStyle(
+                    color: AppConstants.accentColor.withValues(alpha: 0.5),
+                    fontSize: 13,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            children: _speedOptions.entries.map((entry) {
+              final isSelected = _scrollSpeedMs == entry.key;
+              return Padding(
+                padding: const EdgeInsets.only(left: 6),
+                child: GestureDetector(
+                  onTap: () {
+                    setState(() => _scrollSpeedMs = entry.key);
+                    StorageService.instance.scrollSpeedMs = entry.key;
+                    widget.onSettingsChanged?.call(scrollSpeedMs: entry.key);
+                  },
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 150),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 6,
+                    ),
+                    decoration: BoxDecoration(
+                      color: isSelected
+                          ? AppConstants.accentColor
+                          : AppConstants.backgroundColor,
+                      borderRadius: BorderRadius.circular(
+                        AppConstants.smallRadius,
                       ),
-                      decoration: BoxDecoration(
+                      border: Border.all(
                         color: isSelected
                             ? AppConstants.accentColor
-                            : AppConstants.backgroundColor,
-                        borderRadius: BorderRadius.circular(
-                          AppConstants.smallRadius,
-                        ),
-                        border: Border.all(
-                          color: isSelected
-                              ? AppConstants.accentColor
-                              : AppConstants.borderColor,
-                        ),
+                            : AppConstants.borderColor,
                       ),
-                      child: Text(
-                        entry.value,
-                        style: TextStyle(
-                          color: isSelected
-                              ? Colors.white
-                              : AppConstants.accentColor.withValues(alpha: 0.7),
-                          fontSize: 12,
-                          fontWeight: isSelected
-                              ? FontWeight.w700
-                              : FontWeight.w500,
-                        ),
+                    ),
+                    child: Text(
+                      entry.value,
+                      style: TextStyle(
+                        color: isSelected
+                            ? Colors.white
+                            : AppConstants.accentColor.withValues(alpha: 0.7),
+                        fontSize: 12,
+                        fontWeight: isSelected
+                            ? FontWeight.w700
+                            : FontWeight.w500,
                       ),
                     ),
                   ),
-                );
-              }).toList(),
-            ),
-          ],
-        ),
+                ),
+              );
+            }).toList(),
+          ),
+        ],
       ),
     );
   }
@@ -400,177 +413,171 @@ class _SettingsScreenState extends State<SettingsScreen> {
     250: 'Rapide',
   };
 
-  Widget _buildBlinkSpeedTile() {
+  Widget _buildBlinkSpeedContent() {
     final currentLabel =
         _blinkOptions[_blinkIntervalMs] ?? '${_blinkIntervalMs}ms';
 
-    return AppCard(
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-        child: Row(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: AppConstants.accentColor.withValues(alpha: 0.08),
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: const Icon(
-                Icons.visibility,
-                color: AppConstants.accentColor,
-                size: 22,
-              ),
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: AppConstants.accentColor.withValues(alpha: 0.08),
+              borderRadius: BorderRadius.circular(8),
             ),
-            const SizedBox(width: 16),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text(
-                    'Vitesse de clignotement',
-                    style: TextStyle(
-                      color: AppConstants.accentColor,
-                      fontSize: 15,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                  const SizedBox(height: 2),
-                  Text(
-                    currentLabel,
-                    style: TextStyle(
-                      color: AppConstants.accentColor.withValues(alpha: 0.5),
-                      fontSize: 13,
-                    ),
-                  ),
-                ],
-              ),
+            child: const Icon(
+              Icons.visibility,
+              color: AppConstants.accentColor,
+              size: 22,
             ),
-            Row(
-              mainAxisSize: MainAxisSize.min,
-              children: _blinkOptions.entries.map((entry) {
-                final isSelected = _blinkIntervalMs == entry.key;
-                return Padding(
-                  padding: const EdgeInsets.only(left: 6),
-                  child: GestureDetector(
-                    onTap: () {
-                      setState(() => _blinkIntervalMs = entry.key);
-                      StorageService.instance.blinkIntervalMs = entry.key;
-                      widget.onSettingsChanged?.call(
-                        blinkIntervalMs: entry.key,
-                      );
-                    },
-                    child: AnimatedContainer(
-                      duration: const Duration(milliseconds: 150),
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 12,
-                        vertical: 6,
-                      ),
-                      decoration: BoxDecoration(
-                        color: isSelected
-                            ? AppConstants.accentColor
-                            : AppConstants.backgroundColor,
-                        borderRadius: BorderRadius.circular(
-                          AppConstants.smallRadius,
-                        ),
-                        border: Border.all(
-                          color: isSelected
-                              ? AppConstants.accentColor
-                              : AppConstants.borderColor,
-                        ),
-                      ),
-                      child: Text(
-                        entry.value,
-                        style: TextStyle(
-                          color: isSelected
-                              ? Colors.white
-                              : AppConstants.accentColor.withValues(alpha: 0.7),
-                          fontSize: 12,
-                          fontWeight: isSelected
-                              ? FontWeight.w700
-                              : FontWeight.w500,
-                        ),
-                      ),
-                    ),
-                  ),
-                );
-              }).toList(),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildBrightnessTile() {
-    final percent = (_brightness / 255 * 100).round();
-
-    return AppCard(
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          children: [
-            Row(
+          ),
+          const SizedBox(width: 16),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Container(
-                  padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    color: AppConstants.accentColor.withValues(alpha: 0.08),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: const Icon(
-                    Icons.brightness_6,
+                const Text(
+                  'Vitesse de clignotement',
+                  style: TextStyle(
                     color: AppConstants.accentColor,
-                    size: 22,
+                    fontSize: 15,
+                    fontWeight: FontWeight.w600,
                   ),
                 ),
-                const SizedBox(width: 16),
-                const Expanded(
-                  child: Text(
-                    'Luminosité',
-                    style: TextStyle(
-                      color: AppConstants.accentColor,
-                      fontSize: 15,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ),
+                const SizedBox(height: 2),
                 Text(
-                  '$percent %',
+                  currentLabel,
                   style: TextStyle(
                     color: AppConstants.accentColor.withValues(alpha: 0.5),
                     fontSize: 13,
-                    fontWeight: FontWeight.w600,
                   ),
                 ),
               ],
             ),
-            const SizedBox(height: 8),
-            SliderTheme(
-              data: SliderThemeData(
-                activeTrackColor: AppConstants.accentColor,
-                inactiveTrackColor: AppConstants.borderColor,
-                thumbColor: AppConstants.accentColor,
-                overlayColor: AppConstants.accentColor.withValues(alpha: 0.1),
-                trackHeight: 4,
-                thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 8),
+          ),
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            children: _blinkOptions.entries.map((entry) {
+              final isSelected = _blinkIntervalMs == entry.key;
+              return Padding(
+                padding: const EdgeInsets.only(left: 6),
+                child: GestureDetector(
+                  onTap: () {
+                    setState(() => _blinkIntervalMs = entry.key);
+                    StorageService.instance.blinkIntervalMs = entry.key;
+                    widget.onSettingsChanged?.call(blinkIntervalMs: entry.key);
+                  },
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 150),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 6,
+                    ),
+                    decoration: BoxDecoration(
+                      color: isSelected
+                          ? AppConstants.accentColor
+                          : AppConstants.backgroundColor,
+                      borderRadius: BorderRadius.circular(
+                        AppConstants.smallRadius,
+                      ),
+                      border: Border.all(
+                        color: isSelected
+                            ? AppConstants.accentColor
+                            : AppConstants.borderColor,
+                      ),
+                    ),
+                    child: Text(
+                      entry.value,
+                      style: TextStyle(
+                        color: isSelected
+                            ? Colors.white
+                            : AppConstants.accentColor.withValues(alpha: 0.7),
+                        fontSize: 12,
+                        fontWeight: isSelected
+                            ? FontWeight.w700
+                            : FontWeight.w500,
+                      ),
+                    ),
+                  ),
+                ),
+              );
+            }).toList(),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildBrightnessContent() {
+    final percent = (_brightness / 255 * 100).round();
+
+    return Padding(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: AppConstants.accentColor.withValues(alpha: 0.08),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: const Icon(
+                  Icons.brightness_6,
+                  color: AppConstants.accentColor,
+                  size: 22,
+                ),
               ),
-              child: Slider(
-                value: _brightness.toDouble(),
-                min: 5,
-                max: 255,
-                onChanged: (value) {
-                  setState(() => _brightness = value.round());
-                },
-                onChangeEnd: (value) {
-                  final b = value.round();
-                  StorageService.instance.brightness = b;
-                  BleService.instance.sendBrightness(b);
-                  widget.onSettingsChanged?.call(brightness: b);
-                },
+              const SizedBox(width: 16),
+              const Expanded(
+                child: Text(
+                  'Luminosité',
+                  style: TextStyle(
+                    color: AppConstants.accentColor,
+                    fontSize: 15,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
               ),
+              Text(
+                '$percent %',
+                style: TextStyle(
+                  color: AppConstants.accentColor.withValues(alpha: 0.5),
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          SliderTheme(
+            data: SliderThemeData(
+              activeTrackColor: AppConstants.accentColor,
+              inactiveTrackColor: AppConstants.borderColor,
+              thumbColor: AppConstants.accentColor,
+              overlayColor: AppConstants.accentColor.withValues(alpha: 0.1),
+              trackHeight: 4,
+              thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 8),
             ),
-          ],
-        ),
+            child: Slider(
+              value: _brightness.toDouble(),
+              min: 5,
+              max: 255,
+              onChanged: (value) {
+                setState(() => _brightness = value.round());
+              },
+              onChangeEnd: (value) {
+                final b = value.round();
+                StorageService.instance.brightness = b;
+                BleService.instance.sendBrightness(b);
+                widget.onSettingsChanged?.call(brightness: b);
+              },
+            ),
+          ),
+        ],
       ),
     );
   }
