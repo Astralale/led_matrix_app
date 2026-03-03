@@ -199,18 +199,30 @@ class _TextModeScreenState extends State<TextModeScreen> {
     _textController.text = _emergencyMessage.toLowerCase();
     const helpColor = 1;
     final text = _emergencyMessage.toUpperCase();
-    final centeredX =
-        (AppConstants.matrixWidth - TextRenderer.getTextWidth(text)) ~/ 2;
-    setState(() {
-      _matrix.clear();
-      TextRenderer.drawText(
-        _matrix,
-        text,
-        colorIndex: helpColor,
-        startX: centeredX.clamp(0, AppConstants.matrixWidth - 1),
-      );
-    });
-    _sendCurrentMatrix();
+    final textWidth = TextRenderer.getTextWidth(text);
+
+    if (textWidth > AppConstants.matrixWidth) {
+      // Text too wide → auto-scroll
+      setState(() {
+        _selectedColorIndex = helpColor;
+        _scrollEnabled = true;
+        _currentText = text;
+        _scrollOffset = AppConstants.matrixWidth;
+      });
+      _startScrolling();
+    } else {
+      final centeredX = (AppConstants.matrixWidth - textWidth) ~/ 2;
+      setState(() {
+        _matrix.clear();
+        TextRenderer.drawText(
+          _matrix,
+          text,
+          colorIndex: helpColor,
+          startX: centeredX.clamp(0, AppConstants.matrixWidth - 1),
+        );
+      });
+      _sendCurrentMatrix();
+    }
   }
 
   Future<void> _openSettings() async {
