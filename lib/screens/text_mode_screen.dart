@@ -1,37 +1,31 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:led_matrix_app/screens/camera_mode_screen.dart';
 
 import '../config/constants.dart';
-import '../models/app_settings.dart';
 import '../services/text_mode_controller.dart';
 import '../widgets/ble_status_indicator.dart';
 import '../widgets/color_palette.dart';
 import '../widgets/matrix_panel.dart';
 import '../widgets/matrix_preview.dart';
 import 'draw_mode_screen.dart';
-import 'settings_screen.dart';
 
 class TextModeScreen extends StatefulWidget {
-  const TextModeScreen({super.key});
+  final TextModeController controller;
+
+  const TextModeScreen({super.key, required this.controller});
 
   @override
   State<TextModeScreen> createState() => _TextModeScreenState();
 }
 
 class _TextModeScreenState extends State<TextModeScreen> {
-  late final TextModeController _controller;
+  TextModeController get _controller => widget.controller;
   final TextEditingController _textController = TextEditingController();
 
   @override
   void initState() {
     super.initState();
-    _controller = TextModeController();
     _controller.addListener(_onControllerChanged);
-    SystemChrome.setPreferredOrientations([
-      DeviceOrientation.portraitUp,
-      DeviceOrientation.portraitDown,
-    ]);
   }
 
   void _onControllerChanged() {
@@ -41,7 +35,6 @@ class _TextModeScreenState extends State<TextModeScreen> {
   @override
   void dispose() {
     _controller.removeListener(_onControllerChanged);
-    _controller.dispose();
     _textController.dispose();
     super.dispose();
   }
@@ -73,36 +66,6 @@ class _TextModeScreenState extends State<TextModeScreen> {
       DeviceOrientation.portraitUp,
       DeviceOrientation.portraitDown,
     ]);
-  }
-
-  Future<void> _openCameraView() async {
-    await Navigator.push<void>(
-      context,
-      MaterialPageRoute(builder: (context) => CameraModeScreen()),
-    );
-  }
-
-  Future<void> _openSettings() async {
-    final result = await Navigator.push<AppSettings>(
-      context,
-      MaterialPageRoute(
-        builder: (context) => SettingsScreen(
-          emergencyMessage: _controller.emergencyMessage,
-          scrollSpeedMs: _controller.scrollSpeedMs,
-          blinkIntervalMs: _controller.blinkIntervalMs,
-          brightness: _controller.brightness,
-        ),
-      ),
-    );
-
-    if (result != null) {
-      _controller.updateSettings(
-        emergencyMessage: result.emergencyMessage,
-        scrollSpeedMs: result.scrollSpeedMs,
-        blinkIntervalMs: result.blinkIntervalMs,
-        brightness: result.brightness,
-      );
-    }
   }
 
   @override
@@ -176,7 +139,7 @@ class _TextModeScreenState extends State<TextModeScreen> {
           child: BleStatusIndicator(),
         ),
         Padding(
-          padding: const EdgeInsets.only(right: 4),
+          padding: const EdgeInsets.only(right: 8),
           child: ElevatedButton(
             onPressed: _displayHelp,
             style: ElevatedButton.styleFrom(
@@ -189,38 +152,6 @@ class _TextModeScreenState extends State<TextModeScreen> {
               ),
             ),
             child: const Icon(Icons.warning_amber_rounded, size: 18),
-          ),
-        ),
-        Padding(
-          padding: const EdgeInsets.only(right: 4),
-          child: ElevatedButton(
-            onPressed: _openCameraView,
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppConstants.borderColor,
-              foregroundColor: AppConstants.accentColor,
-              elevation: 0,
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(AppConstants.defaultRadius),
-              ),
-            ),
-            child: const Icon(Icons.camera, size: 16),
-          ),
-        ),
-        Padding(
-          padding: const EdgeInsets.only(right: 8),
-          child: ElevatedButton(
-            onPressed: _openSettings,
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppConstants.borderColor,
-              foregroundColor: AppConstants.accentColor,
-              elevation: 0,
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(AppConstants.defaultRadius),
-              ),
-            ),
-            child: const Icon(Icons.settings, size: 16),
           ),
         ),
       ],

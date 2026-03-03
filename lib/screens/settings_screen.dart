@@ -3,25 +3,23 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_blue_plus/flutter_blue_plus.dart';
 import '../config/constants.dart';
-import '../models/app_settings.dart';
 import '../services/ble_service.dart';
 import '../services/storage_service.dart';
 import '../widgets/app_card.dart';
 import '../widgets/ble_status_indicator.dart';
 
-class SettingsScreen extends StatefulWidget {
-  final String emergencyMessage;
-  final int scrollSpeedMs;
-  final int blinkIntervalMs;
-  final int brightness;
+typedef SettingsChangedCallback =
+    void Function({
+      String? emergencyMessage,
+      int? scrollSpeedMs,
+      int? blinkIntervalMs,
+      int? brightness,
+    });
 
-  const SettingsScreen({
-    super.key,
-    required this.emergencyMessage,
-    required this.scrollSpeedMs,
-    required this.blinkIntervalMs,
-    required this.brightness,
-  });
+class SettingsScreen extends StatefulWidget {
+  final SettingsChangedCallback? onSettingsChanged;
+
+  const SettingsScreen({super.key, this.onSettingsChanged});
 
   @override
   State<SettingsScreen> createState() => _SettingsScreenState();
@@ -48,10 +46,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
   @override
   void initState() {
     super.initState();
-    _emergencyMessage = widget.emergencyMessage;
-    _scrollSpeedMs = widget.scrollSpeedMs;
-    _blinkIntervalMs = widget.blinkIntervalMs;
-    _brightness = widget.brightness;
+    final storage = StorageService.instance;
+    _emergencyMessage = storage.emergencyMessage;
+    _scrollSpeedMs = storage.scrollSpeedMs;
+    _blinkIntervalMs = storage.blinkIntervalMs;
+    _brightness = storage.brightness;
     _bleSub = BleService.instance.stateStream.listen(
       (state) => setState(() => _bleState = state),
     );
@@ -63,15 +62,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
     _scanSub?.cancel();
     FlutterBluePlus.stopScan();
     super.dispose();
-  }
-
-  AppSettings _buildResult() {
-    return AppSettings(
-      emergencyMessage: _emergencyMessage,
-      scrollSpeedMs: _scrollSpeedMs,
-      blinkIntervalMs: _blinkIntervalMs,
-      brightness: _brightness,
-    );
   }
 
   Future<void> _startScan() async {
@@ -182,50 +172,43 @@ class _SettingsScreenState extends State<SettingsScreen> {
         _emergencyMessage = result.toUpperCase();
       });
       StorageService.instance.emergencyMessage = _emergencyMessage;
+      widget.onSettingsChanged?.call(emergencyMessage: _emergencyMessage);
     }
     controller.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    return PopScope(
-      canPop: false,
-      onPopInvokedWithResult: (didPop, result) {
-        if (!didPop) {
-          Navigator.pop(context, _buildResult());
-        }
-      },
-      child: Scaffold(
-        backgroundColor: AppConstants.backgroundColor,
-        appBar: _buildAppBar(),
-        body: ListView(
-          padding: const EdgeInsets.all(AppConstants.defaultPadding),
-          children: [
-            _buildSectionHeader('Bluetooth'),
+    return Scaffold(
+      backgroundColor: AppConstants.backgroundColor,
+      appBar: _buildAppBar(),
+      body: ListView(
+        padding: const EdgeInsets.all(AppConstants.defaultPadding),
+        children: [
+          _buildSectionHeader('Bluetooth'),
+          const SizedBox(height: 8),
+          _buildBluetoothTile(),
+          if (_foundDevices.isNotEmpty || _isScanning) ...[
             const SizedBox(height: 8),
-            _buildBluetoothTile(),
-            if (_foundDevices.isNotEmpty || _isScanning) ...[
-              const SizedBox(height: 8),
-              _buildDeviceList(),
-            ],
-            const SizedBox(height: 20),
-            _buildSectionHeader('Urgence'),
-            const SizedBox(height: 8),
-            _buildEmergencyTile(),
-            const SizedBox(height: 20),
-            _buildSectionHeader('Défilement'),
-            const SizedBox(height: 8),
-            _buildScrollSpeedTile(),
-            const SizedBox(height: 20),
-            _buildSectionHeader('Clignotement'),
-            const SizedBox(height: 8),
-            _buildBlinkSpeedTile(),
-            const SizedBox(height: 20),
-            _buildSectionHeader('Panneau LED'),
-            const SizedBox(height: 8),
-            _buildBrightnessTile(),
+            _buildDeviceList(),
           ],
-        ),
+          const SizedBox(height: 20),
+          _buildSectionHeader('Urgence'),
+          const SizedBox(height: 8),
+          _buildEmergencyTile(),
+          const SizedBox(height: 20),
+          _buildSectionHeader('Défilement'),
+          const SizedBox(height: 8),
+          _buildScrollSpeedTile(),
+          const SizedBox(height: 20),
+          _buildSectionHeader('Clignotement'),
+          const SizedBox(height: 8),
+          _buildBlinkSpeedTile(),
+          const SizedBox(height: 20),
+          _buildSectionHeader('Panneau LED'),
+          const SizedBox(height: 8),
+          _buildBrightnessTile(),
+        ],
       ),
     );
   }
@@ -235,10 +218,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       backgroundColor: AppConstants.backgroundColor,
       elevation: 0,
       surfaceTintColor: Colors.transparent,
-      leading: IconButton(
-        icon: const Icon(Icons.arrow_back, color: AppConstants.accentColor),
-        onPressed: () => Navigator.pop(context, _buildResult()),
-      ),
+      automaticallyImplyLeading: false,
       bottom: PreferredSize(
         preferredSize: const Size.fromHeight(1),
         child: Container(height: 1, color: AppConstants.borderColor),
@@ -370,6 +350,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     onTap: () {
                       setState(() => _scrollSpeedMs = entry.key);
                       StorageService.instance.scrollSpeedMs = entry.key;
+                      widget.onSettingsChanged?.call(scrollSpeedMs: entry.key);
                     },
                     child: AnimatedContainer(
                       duration: const Duration(milliseconds: 150),
@@ -474,6 +455,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     onTap: () {
                       setState(() => _blinkIntervalMs = entry.key);
                       StorageService.instance.blinkIntervalMs = entry.key;
+                      widget.onSettingsChanged?.call(
+                        blinkIntervalMs: entry.key,
+                      );
                     },
                     child: AnimatedContainer(
                       duration: const Duration(milliseconds: 150),
@@ -581,6 +565,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   final b = value.round();
                   StorageService.instance.brightness = b;
                   BleService.instance.sendBrightness(b);
+                  widget.onSettingsChanged?.call(brightness: b);
                 },
               ),
             ),
