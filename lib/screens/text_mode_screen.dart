@@ -7,6 +7,7 @@ import '../services/text_renderer.dart';
 import '../widgets/matrix_preview.dart';
 import '../widgets/color_palette.dart';
 import 'draw_mode_screen.dart';
+import '../services/ble_service.dart';
 
 class TextModeScreen extends StatefulWidget {
   const TextModeScreen({super.key});
@@ -33,6 +34,10 @@ class _TextModeScreenState extends State<TextModeScreen> {
   // Draw scroll
   List<List<int>>? _scrollSnapshot;
 
+  // BLE
+  BleConnectionState _bleState = BleService.instance.currentState;
+  StreamSubscription<BleConnectionState>? _bleSub;
+
   @override
   void initState() {
     super.initState();
@@ -40,13 +45,21 @@ class _TextModeScreenState extends State<TextModeScreen> {
       DeviceOrientation.portraitUp,
       DeviceOrientation.portraitDown,
     ]);
+    _bleSub = BleService.instance.stateStream.listen(
+      (state) => setState(() => _bleState = state),
+    );
   }
 
   @override
   void dispose() {
     _scrollTimer?.cancel();
     _textController.dispose();
+    _bleSub?.cancel();
     super.dispose();
+  }
+
+  void _sendCurrentMatrix() {
+    BleService.instance.sendMatrix(_matrix.pixels);
   }
 
   void _applyText() {
@@ -73,6 +86,7 @@ class _TextModeScreenState extends State<TextModeScreen> {
           startX: centeredX.clamp(0, AppConstants.matrixWidth - 1),
         );
       });
+      _sendCurrentMatrix();
     }
   }
 
@@ -95,6 +109,7 @@ class _TextModeScreenState extends State<TextModeScreen> {
             _scrollOffset = AppConstants.matrixWidth;
           }
         });
+        _sendCurrentMatrix();
       },
     );
   }
@@ -164,6 +179,7 @@ class _TextModeScreenState extends State<TextModeScreen> {
             }
           }
         });
+        _sendCurrentMatrix();
       },
     );
   }
@@ -173,11 +189,12 @@ class _TextModeScreenState extends State<TextModeScreen> {
     setState(() {
       _matrix.clear();
     });
+    _sendCurrentMatrix();
   }
 
   void _displayHelp() {
     _stopScrollingAndReset();
-    _textController.text = 'HELP';
+    _textController.text = 'help';
     const helpColor = 1; // Rouge
     const text = 'HELP';
     final centeredX =
@@ -191,6 +208,7 @@ class _TextModeScreenState extends State<TextModeScreen> {
         startX: centeredX.clamp(0, AppConstants.matrixWidth - 1),
       );
     });
+    _sendCurrentMatrix();
   }
 
   Future<void> _openDrawMode() async {
@@ -229,19 +247,19 @@ class _TextModeScreenState extends State<TextModeScreen> {
 
           _buildTextField(),
 
-          const SizedBox(height: 12),
+          const SizedBox(height: 10),
 
           _buildColorSection(),
 
-          const SizedBox(height: 8),
+          const SizedBox(height: 10),
 
           _buildScrollToggle(),
 
-          const SizedBox(height: 8),
+          const SizedBox(height: 10),
 
           _buildHelpButton(),
 
-          const SizedBox(height: 8),
+          const SizedBox(height: 10),
 
           _buildActionButtons(),
         ],
@@ -338,16 +356,16 @@ class _TextModeScreenState extends State<TextModeScreen> {
                 size: 18,
                 color: _scrollEnabled
                     ? AppConstants.accentColor
-                    : AppConstants.borderColor,
+                    : AppConstants.accentColor.withOpacity(0.3),
               ),
               const SizedBox(width: 8),
               Text(
                 'Défilement',
                 style: TextStyle(
-                  fontSize: 13,
+                  fontSize: 15,
                   color: _scrollEnabled
                       ? AppConstants.accentColor
-                      : const Color(0xFF5A3A3A),
+                      : AppConstants.accentColor.withOpacity(0.55),
                   fontWeight: _scrollEnabled
                       ? FontWeight.w600
                       : FontWeight.normal,
@@ -375,6 +393,111 @@ class _TextModeScreenState extends State<TextModeScreen> {
     );
   }
 
+  Widget _buildPanelHeader() {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(vertical: 7),
+      decoration: BoxDecoration(
+        color: AppConstants.accentColor.withOpacity(0.10),
+        borderRadius: const BorderRadius.vertical(
+          top: Radius.circular(AppConstants.defaultRadius - 2),
+        ),
+      ),
+      child: const Text(
+        'PANNEAU LED  ·  32 × 16',
+        textAlign: TextAlign.center,
+        style: TextStyle(
+          color: AppConstants.backgroundColor,
+          fontSize: 11,
+          fontWeight: FontWeight.w700,
+          letterSpacing: 2.0,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildBleFooter() {
+    final connected = _bleState == BleConnectionState.connected;
+    final scanning =
+        _bleState == BleConnectionState.scanning ||
+        _bleState == BleConnectionState.connecting;
+    final error = _bleState == BleConnectionState.error;
+
+    final Color fg = connected
+        ? AppConstants.successColor
+        : error
+        ? AppConstants.dangerColor
+        : AppConstants.backgroundColor.withOpacity(0.6);
+
+    final IconData icon = connected
+        ? Icons.bluetooth_connected
+        : scanning
+        ? Icons.bluetooth_searching
+        : error
+        ? Icons.bluetooth_disabled
+        : Icons.bluetooth;
+
+    final String label = connected
+        ? 'Panneau connecté — appuyez pour déconnecter'
+        : scanning
+        ? 'Connexion en cours...'
+        : error
+        ? 'Connexion échouée — appuyez pour réessayer'
+        : 'Non connecté — appuyez pour connecter';
+
+    return GestureDetector(
+      onTap: scanning
+          ? null
+          : () {
+              if (connected) {
+                BleService.instance.disconnect();
+              } else {
+                BleService.instance.connect().catchError((_) {});
+              }
+            },
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+        decoration: BoxDecoration(
+          color: connected
+              ? AppConstants.successColor.withOpacity(0.10)
+              : error
+              ? AppConstants.dangerColor.withOpacity(0.10)
+              : AppConstants.accentColor.withOpacity(0.12),
+          borderRadius: const BorderRadius.vertical(
+            bottom: Radius.circular(AppConstants.defaultRadius - 2),
+          ),
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            if (scanning)
+              SizedBox(
+                width: 11,
+                height: 11,
+                child: CircularProgressIndicator(
+                  strokeWidth: 1.6,
+                  color: AppConstants.backgroundColor.withOpacity(0.6),
+                ),
+              )
+            else
+              Icon(icon, size: 13, color: fg),
+            const SizedBox(width: 6),
+            Text(
+              label,
+              style: TextStyle(
+                color: fg,
+                fontSize: 10,
+                fontWeight: FontWeight.w600,
+                letterSpacing: 0.3,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   Widget _buildMatrixPreview() {
     return Flexible(
       flex: 2,
@@ -388,34 +511,9 @@ class _TextModeScreenState extends State<TextModeScreen> {
           ),
           child: Column(
             children: [
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.symmetric(vertical: 7),
-                decoration: BoxDecoration(
-                  color: AppConstants.accentColor.withOpacity(0.10),
-                  borderRadius: const BorderRadius.vertical(
-                    top: Radius.circular(AppConstants.defaultRadius - 2),
-                  ),
-                ),
-                child: const Text(
-                  'PANNEAU LED  ·  32 × 16',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    color: AppConstants.backgroundColor,
-                    fontSize: 11,
-                    fontWeight: FontWeight.w700,
-                    letterSpacing: 2.0,
-                  ),
-                ),
-              ),
-              Expanded(
-                child: ClipRRect(
-                  borderRadius: const BorderRadius.vertical(
-                    bottom: Radius.circular(AppConstants.defaultRadius - 2),
-                  ),
-                  child: MatrixPreview(matrix: _matrix, showGlow: true),
-                ),
-              ),
+              _buildPanelHeader(),
+              Expanded(child: MatrixPreview(matrix: _matrix, showGlow: true)),
+              _buildBleFooter(),
             ],
           ),
         ),
@@ -459,12 +557,13 @@ class _TextModeScreenState extends State<TextModeScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
-            'Couleur du texte :',
+          Text(
+            'Couleur du texte',
             style: TextStyle(
-              color: Color(0xFF5A3A3A),
+              color: AppConstants.accentColor.withOpacity(0.6),
               fontSize: 12,
-              fontWeight: FontWeight.w500,
+              fontWeight: FontWeight.w600,
+              letterSpacing: 0.3,
             ),
           ),
           const SizedBox(height: 6),
@@ -500,9 +599,9 @@ class _TextModeScreenState extends State<TextModeScreen> {
             ),
           ),
           style: ElevatedButton.styleFrom(
-            backgroundColor: const Color(0xFFCC0000),
+            backgroundColor: AppConstants.dangerColor,
             foregroundColor: Colors.white,
-            elevation: 3,
+            elevation: 0,
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(AppConstants.defaultRadius),
             ),
@@ -533,6 +632,16 @@ class _TextModeScreenState extends State<TextModeScreen> {
                   'Appliquer',
                   style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
                 ),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppConstants.accentColor,
+                  foregroundColor: Colors.white,
+                  elevation: 0,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(
+                      AppConstants.defaultRadius,
+                    ),
+                  ),
+                ),
               ),
             ),
           ),
@@ -546,10 +655,8 @@ class _TextModeScreenState extends State<TextModeScreen> {
                 icon: const Icon(Icons.delete_outline, size: 18),
                 label: const Text('Effacer', style: TextStyle(fontSize: 14)),
                 style: OutlinedButton.styleFrom(
-                  foregroundColor: AppConstants.dangerColor,
-                  side: BorderSide(
-                    color: AppConstants.dangerColor.withOpacity(0.5),
-                  ),
+                  foregroundColor: AppConstants.accentColor.withOpacity(0.7),
+                  side: BorderSide(color: AppConstants.borderColor),
                 ),
               ),
             ),

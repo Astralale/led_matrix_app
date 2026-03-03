@@ -18,9 +18,31 @@ class AppConstants {
     Color(0xFFFFFFFF), // 7 - Blanc
     Color(0xFFFF8800), // 8 - Orange
     Color(0xFF8800FF), // 9 - Violet
+    Color(0xFFFF1493), // 10 - Rose
+    Color(0xFFFF4400), // 11 - Rouge-orange
+    Color(0xFF80FF00), // 12 - Vert lime
+    Color(0xFF00AAFF), // 13 - Bleu ciel
+    Color(0xFFFFD700), // 14 - Or
+    Color(0xFF00FFB0), // 15 - Turquoise
   ];
 
-  static const List<int> textModeColors = [1, 2, 3, 4, 5, 6, 7, 8, 9];
+  static const List<int> textModeColors = [
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9,
+    10,
+    11,
+    12,
+    13,
+    14,
+    15,
+  ];
 
   static const Color backgroundColor = Color(0xFFFFFFFF);
   static const Color surfaceColor = Color(0xFFFDF5F5);

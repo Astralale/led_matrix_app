@@ -40,7 +40,7 @@ class LedMatrix {
 
   void setPixel(int x, int y, int colorIndex) {
     if (_isValidPosition(x, y)) {
-      _pixels[y][x] = colorIndex.clamp(0, 9);
+      _pixels[y][x] = colorIndex.clamp(0, 15);
     }
   }
 
@@ -51,7 +51,7 @@ class LedMatrix {
   void fill(int colorIndex) {
     for (int y = 0; y < height; y++) {
       for (int x = 0; x < width; x++) {
-        _pixels[y][x] = colorIndex.clamp(0, 9);
+        _pixels[y][x] = colorIndex.clamp(0, 15);
       }
     }
   }
