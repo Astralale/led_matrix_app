@@ -1,6 +1,6 @@
 import 'dart:async';
 
-import 'package:flutter/foundation.dart';
+import 'package:flutter/widgets.dart';
 
 import '../config/constants.dart';
 import '../models/led_matrix.dart';
@@ -9,9 +9,47 @@ import '../services/notification_service.dart';
 import '../services/storage_service.dart';
 import '../services/text_renderer.dart';
 
-class TextModeController extends ChangeNotifier {
+class TextModeController extends ChangeNotifier with WidgetsBindingObserver {
   TextModeController() {
     _loadSettings();
+    WidgetsBinding.instance.addObserver(this);
+  }
+
+  bool _pausedWhileScrolling = false;
+  bool _pausedWhileBlinking = false;
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.paused ||
+        state == AppLifecycleState.inactive) {
+      _pauseEffects();
+    } else if (state == AppLifecycleState.resumed) {
+      _resumeEffects();
+    }
+  }
+
+  void _pauseEffects() {
+    _pausedWhileScrolling = isScrolling;
+    _pausedWhileBlinking = blinkEnabled;
+    _scrollTimer?.cancel();
+    _scrollTimer = null;
+    _blinkTimer?.cancel();
+    _blinkTimer = null;
+  }
+
+  void _resumeEffects() {
+    if (_pausedWhileScrolling) {
+      if (_scrollSnapshot != null) {
+        _startDrawScroll();
+      } else if (_currentScrollText.isNotEmpty) {
+        _startScrolling();
+      }
+    }
+    if (_pausedWhileBlinking) {
+      _restartActiveBlink();
+    }
+    _pausedWhileScrolling = false;
+    _pausedWhileBlinking = false;
   }
 
   final LedMatrix matrix = LedMatrix();
@@ -373,6 +411,7 @@ class TextModeController extends ChangeNotifier {
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _scrollTimer?.cancel();
     _blinkTimer?.cancel();
     super.dispose();

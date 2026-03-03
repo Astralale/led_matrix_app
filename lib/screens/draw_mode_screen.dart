@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../config/constants.dart';
 import '../models/led_matrix.dart';
+import '../widgets/matrix_panel.dart';
 import '../widgets/matrix_preview.dart';
 import '../widgets/color_palette.dart';
 
@@ -201,48 +202,17 @@ class _DrawModeScreenState extends State<DrawModeScreen> {
   Widget _buildDrawingArea() {
     return Padding(
       padding: const EdgeInsets.all(8),
-      child: Container(
-        decoration: BoxDecoration(
-          color: const Color(0xFF3D1010),
-          borderRadius: BorderRadius.circular(AppConstants.defaultRadius),
-          border: Border.all(color: AppConstants.borderColor, width: 1),
-        ),
-        child: Column(
-          children: [
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.symmetric(vertical: 7),
-              decoration: BoxDecoration(
-                color: AppConstants.accentColor.withValues(alpha: 0.10),
-                borderRadius: const BorderRadius.vertical(
-                  top: Radius.circular(AppConstants.defaultRadius - 2),
-                ),
-              ),
-              child: const Text(
-                'PANNEAU LED  ·  32 × 16',
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  color: AppConstants.backgroundColor,
-                  fontSize: 11,
-                  fontWeight: FontWeight.w700,
-                  letterSpacing: 2.0,
-                ),
-              ),
-            ),
-            Expanded(
-              child: ClipRRect(
-                borderRadius: const BorderRadius.vertical(
-                  bottom: Radius.circular(AppConstants.defaultRadius - 2),
-                ),
-                child: InteractiveMatrixPreview(
-                  matrix: _matrix,
-                  selectedColorIndex: _selectedColorIndex % 10,
-                  isDrawMode: _isDrawMode,
-                  onMatrixChanged: () => setState(() {}),
-                ),
-              ),
-            ),
-          ],
+      child: MatrixPanel(
+        child: ClipRRect(
+          borderRadius: const BorderRadius.vertical(
+            bottom: Radius.circular(AppConstants.defaultRadius - 2),
+          ),
+          child: InteractiveMatrixPreview(
+            matrix: _matrix,
+            selectedColorIndex: _selectedColorIndex % 10,
+            isDrawMode: _isDrawMode,
+            onMatrixChanged: () => setState(() {}),
+          ),
         ),
       ),
     );

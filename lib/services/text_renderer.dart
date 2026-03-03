@@ -53,8 +53,7 @@ class TextRenderer {
           int x = startX + col;
           int y = startY + row;
 
-          if (x < AppConstants.matrixWidth &&
-              y < AppConstants.matrixHeight) {
+          if (x < AppConstants.matrixWidth && y < AppConstants.matrixHeight) {
             matrix.setPixel(x, y, colorIndex);
           }
         }
@@ -67,6 +66,5 @@ class TextRenderer {
     return totalWidth <= AppConstants.matrixWidth;
   }
 
-  static int getTextWidth(String text) =>
-      BitmapFont.calculateTextWidth(text);
+  static int getTextWidth(String text) => BitmapFont.calculateTextWidth(text);
 }

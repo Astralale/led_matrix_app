@@ -3,8 +3,10 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_blue_plus/flutter_blue_plus.dart';
 import '../config/constants.dart';
+import '../models/app_settings.dart';
 import '../services/ble_service.dart';
 import '../services/storage_service.dart';
+import '../widgets/app_card.dart';
 import '../widgets/ble_status_indicator.dart';
 
 class SettingsScreen extends StatefulWidget {
@@ -63,13 +65,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
     super.dispose();
   }
 
-  Map<String, dynamic> _buildResult() {
-    return {
-      'emergencyMessage': _emergencyMessage,
-      'scrollSpeedMs': _scrollSpeedMs,
-      'blinkIntervalMs': _blinkIntervalMs,
-      'brightness': _brightness,
-    };
+  AppSettings _buildResult() {
+    return AppSettings(
+      emergencyMessage: _emergencyMessage,
+      scrollSpeedMs: _scrollSpeedMs,
+      blinkIntervalMs: _blinkIntervalMs,
+      brightness: _brightness,
+    );
   }
 
   Future<void> _startScan() async {
@@ -275,12 +277,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   Widget _buildEmergencyTile() {
-    return Container(
-      decoration: BoxDecoration(
-        color: AppConstants.surfaceColor,
-        borderRadius: BorderRadius.circular(AppConstants.defaultRadius),
-        border: Border.all(color: AppConstants.borderColor),
-      ),
+    return AppCard(
       child: ListTile(
         contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
         leading: Container(
@@ -322,12 +319,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   Widget _buildScrollSpeedTile() {
     final currentLabel = _speedOptions[_scrollSpeedMs] ?? '${_scrollSpeedMs}ms';
 
-    return Container(
-      decoration: BoxDecoration(
-        color: AppConstants.surfaceColor,
-        borderRadius: BorderRadius.circular(AppConstants.defaultRadius),
-        border: Border.all(color: AppConstants.borderColor),
-      ),
+    return AppCard(
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         child: Row(
@@ -431,12 +423,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     final currentLabel =
         _blinkOptions[_blinkIntervalMs] ?? '${_blinkIntervalMs}ms';
 
-    return Container(
-      decoration: BoxDecoration(
-        color: AppConstants.surfaceColor,
-        borderRadius: BorderRadius.circular(AppConstants.defaultRadius),
-        border: Border.all(color: AppConstants.borderColor),
-      ),
+    return AppCard(
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         child: Row(
@@ -533,12 +520,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   Widget _buildBrightnessTile() {
     final percent = (_brightness / 255 * 100).round();
 
-    return Container(
-      decoration: BoxDecoration(
-        color: AppConstants.surfaceColor,
-        borderRadius: BorderRadius.circular(AppConstants.defaultRadius),
-        border: Border.all(color: AppConstants.borderColor),
-      ),
+    return AppCard(
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
@@ -642,12 +624,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
         ? 'Échec — appuyez pour réessayer'
         : 'Non connecté — appuyez pour scanner';
 
-    return Container(
-      decoration: BoxDecoration(
-        color: AppConstants.surfaceColor,
-        borderRadius: BorderRadius.circular(AppConstants.defaultRadius),
-        border: Border.all(color: AppConstants.borderColor),
-      ),
+    return AppCard(
       child: ListTile(
         contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
         leading: Container(

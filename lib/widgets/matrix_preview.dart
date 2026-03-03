@@ -5,95 +5,25 @@ import '../models/led_matrix.dart';
 
 class MatrixPreview extends StatelessWidget {
   final LedMatrix matrix;
-  final double? cellSize; // Si null, calcul automatique
-  final bool showGlow; // Effet de lueur sur les LEDs allumées
-  final Function(int x, int y)? onPixelTap; // Callback quand on tape un pixel
+  final bool showGlow;
 
-  const MatrixPreview({
-    super.key,
-    required this.matrix,
-    this.cellSize,
-    this.showGlow = true,
-    this.onPixelTap,
-  });
+  const MatrixPreview({super.key, required this.matrix, this.showGlow = true});
 
   @override
   Widget build(BuildContext context) {
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final calculatedCellSize = cellSize ?? _calculateCellSize(constraints);
-        final cellMargin = calculatedCellSize * 0.04;
-        final actualCellSize = calculatedCellSize - (cellMargin * 2);
-
-        return Center(child: _buildGrid(actualCellSize, cellMargin));
-      },
-    );
-  }
-
-  double _calculateCellSize(BoxConstraints constraints) {
-    double availableWidth = constraints.maxWidth - 20;
-    double availableHeight = constraints.maxHeight - 20;
-
-    double cellWidth = availableWidth / AppConstants.matrixWidth;
-    double cellHeight = availableHeight / AppConstants.matrixHeight;
-
-    double size = cellWidth < cellHeight ? cellWidth : cellHeight;
-
-    // Min/max bounds
-    return size.clamp(2.0, 20.0);
-  }
-
-  Widget _buildGrid(double cellSize, double cellMargin) {
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: List.generate(AppConstants.matrixHeight, (y) {
-        return Row(
-          mainAxisSize: MainAxisSize.min,
-          children: List.generate(AppConstants.matrixWidth, (x) {
-            return _buildCell(x, y, cellSize, cellMargin);
-          }),
-        );
-      }),
-    );
-  }
-
-  Widget _buildCell(int x, int y, double cellSize, double cellMargin) {
-    final colorIndex = matrix.getPixel(x, y);
-    final isLit = colorIndex != 0;
-    final color = AppConstants.colorPalette[colorIndex];
-
-    Widget cell = Container(
-      width: cellSize,
-      height: cellSize,
-      margin: EdgeInsets.all(cellMargin),
-      decoration: BoxDecoration(
-        color: isLit ? color : const Color(0xFF5C1F1F),
-        borderRadius: BorderRadius.circular(cellSize * 0.25),
-        boxShadow: (isLit && showGlow)
-            ? [
-                BoxShadow(
-                  color: color.withValues(alpha: 0.5),
-                  blurRadius: cellSize * 0.3,
-                  spreadRadius: 0,
-                ),
-              ]
-            : null,
+    return RepaintBoundary(
+      child: CustomPaint(
+        size: Size.infinite,
+        painter: _MatrixPainter(matrix: matrix, showGlow: showGlow),
       ),
     );
-
-    // If there's a callback, make the cell interactive
-    if (onPixelTap != null) {
-      return GestureDetector(onTap: () => onPixelTap!(x, y), child: cell);
-    }
-
-    return cell;
   }
 }
 
 class InteractiveMatrixPreview extends StatefulWidget {
   final LedMatrix matrix;
   final int selectedColorIndex;
-  final bool isDrawMode; // true = dessiner, false = effacer
+  final bool isDrawMode;
   final VoidCallback onMatrixChanged;
 
   const InteractiveMatrixPreview({
@@ -112,22 +42,16 @@ class InteractiveMatrixPreview extends StatefulWidget {
 class _InteractiveMatrixPreviewState extends State<InteractiveMatrixPreview> {
   bool _isDrawing = false;
 
-  void _handleInteraction(
-    Offset localPosition,
-    double cellSize,
-    double cellMargin,
-  ) {
-    double totalCellSize = cellSize + (cellMargin * 2);
-
-    int x = (localPosition.dx / totalCellSize).floor();
-    int y = (localPosition.dy / totalCellSize).floor();
+  void _handleInteraction(Offset localPosition, Size size) {
+    final metrics = _CellMetrics.fromSize(size);
+    final x = ((localPosition.dx - metrics.offsetX) / metrics.cellSize).floor();
+    final y = ((localPosition.dy - metrics.offsetY) / metrics.cellSize).floor();
 
     if (x >= 0 &&
         x < AppConstants.matrixWidth &&
         y >= 0 &&
         y < AppConstants.matrixHeight) {
-      int colorToSet = widget.isDrawMode ? widget.selectedColorIndex : 0;
-
+      final colorToSet = widget.isDrawMode ? widget.selectedColorIndex : 0;
       if (widget.matrix.getPixel(x, y) != colorToSet) {
         widget.matrix.setPixel(x, y, colorToSet);
         widget.onMatrixChanged();
@@ -139,96 +63,102 @@ class _InteractiveMatrixPreviewState extends State<InteractiveMatrixPreview> {
   Widget build(BuildContext context) {
     return LayoutBuilder(
       builder: (context, constraints) {
-        // Calculer les dimensions
-        double availableWidth = constraints.maxWidth - 16;
-        double availableHeight = constraints.maxHeight - 16;
-
-        double cellWidth = availableWidth / AppConstants.matrixWidth;
-        double cellHeight = availableHeight / AppConstants.matrixHeight;
-        double cellSize = cellWidth < cellHeight ? cellWidth : cellHeight;
-
-        double cellMargin = cellSize * 0.04;
-        double actualCellSize = cellSize - (cellMargin * 2);
-
-        double totalWidth =
-            AppConstants.matrixWidth * (actualCellSize + cellMargin * 2);
-        double totalHeight =
-            AppConstants.matrixHeight * (actualCellSize + cellMargin * 2);
-
-        return Center(
-          child: GestureDetector(
-            onTapDown: (details) {
-              _handleInteraction(
-                details.localPosition,
-                actualCellSize,
-                cellMargin,
-              );
-            },
-            onPanStart: (details) {
-              _isDrawing = true;
-              _handleInteraction(
-                details.localPosition,
-                actualCellSize,
-                cellMargin,
-              );
-            },
-            onPanUpdate: (details) {
-              if (_isDrawing) {
-                _handleInteraction(
-                  details.localPosition,
-                  actualCellSize,
-                  cellMargin,
-                );
-              }
-            },
-            onPanEnd: (_) => _isDrawing = false,
-            child: Container(
-              width: totalWidth,
-              height: totalHeight,
-              color: Colors.transparent,
-              child: _buildGrid(actualCellSize, cellMargin),
+        final size = Size(constraints.maxWidth, constraints.maxHeight);
+        return GestureDetector(
+          onTapDown: (d) => _handleInteraction(d.localPosition, size),
+          onPanStart: (d) {
+            _isDrawing = true;
+            _handleInteraction(d.localPosition, size);
+          },
+          onPanUpdate: (d) {
+            if (_isDrawing) {
+              _handleInteraction(d.localPosition, size);
+            }
+          },
+          onPanEnd: (_) => _isDrawing = false,
+          child: RepaintBoundary(
+            child: CustomPaint(
+              size: size,
+              painter: _MatrixPainter(matrix: widget.matrix, showGlow: true),
             ),
           ),
         );
       },
     );
   }
+}
 
-  Widget _buildGrid(double cellSize, double cellMargin) {
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: List.generate(AppConstants.matrixHeight, (y) {
-        return Row(
-          mainAxisSize: MainAxisSize.min,
-          children: List.generate(AppConstants.matrixWidth, (x) {
-            return _buildCell(x, y, cellSize, cellMargin);
-          }),
+class _CellMetrics {
+  final double cellSize;
+  final double offsetX;
+  final double offsetY;
+
+  const _CellMetrics({
+    required this.cellSize,
+    required this.offsetX,
+    required this.offsetY,
+  });
+
+  factory _CellMetrics.fromSize(Size size) {
+    final cellWidth = size.width / AppConstants.matrixWidth;
+    final cellHeight = size.height / AppConstants.matrixHeight;
+    final cellSize = cellWidth < cellHeight ? cellWidth : cellHeight;
+    final totalWidth = AppConstants.matrixWidth * cellSize;
+    final totalHeight = AppConstants.matrixHeight * cellSize;
+    return _CellMetrics(
+      cellSize: cellSize,
+      offsetX: (size.width - totalWidth) / 2,
+      offsetY: (size.height - totalHeight) / 2,
+    );
+  }
+}
+
+class _MatrixPainter extends CustomPainter {
+  final LedMatrix matrix;
+  final bool showGlow;
+
+  _MatrixPainter({required this.matrix, this.showGlow = true});
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final metrics = _CellMetrics.fromSize(size);
+    final margin = metrics.cellSize * 0.04;
+    final actualSize = metrics.cellSize - (margin * 2);
+    final borderRadius = actualSize * 0.25;
+    final paint = Paint()..style = PaintingStyle.fill;
+
+    for (int y = 0; y < AppConstants.matrixHeight; y++) {
+      for (int x = 0; x < AppConstants.matrixWidth; x++) {
+        final colorIndex = matrix.getPixel(x, y);
+        final isLit = colorIndex != 0;
+        final color = isLit
+            ? AppConstants.colorPalette[colorIndex]
+            : const Color(0xFF5C1F1F);
+
+        final rect = RRect.fromRectAndRadius(
+          Rect.fromLTWH(
+            metrics.offsetX + x * metrics.cellSize + margin,
+            metrics.offsetY + y * metrics.cellSize + margin,
+            actualSize,
+            actualSize,
+          ),
+          Radius.circular(borderRadius),
         );
-      }),
-    );
+
+        if (isLit && showGlow) {
+          paint
+            ..color = color.withValues(alpha: 0.5)
+            ..maskFilter = MaskFilter.blur(BlurStyle.normal, actualSize * 0.15);
+          canvas.drawRRect(rect, paint);
+          paint.maskFilter = null;
+        }
+
+        paint.color = color;
+        canvas.drawRRect(rect, paint);
+      }
+    }
   }
 
-  Widget _buildCell(int x, int y, double cellSize, double cellMargin) {
-    final colorIndex = widget.matrix.getPixel(x, y);
-    final isLit = colorIndex != 0;
-    final color = AppConstants.colorPalette[colorIndex];
-
-    return Container(
-      width: cellSize,
-      height: cellSize,
-      margin: EdgeInsets.all(cellMargin),
-      decoration: BoxDecoration(
-        color: isLit ? color : const Color(0xFF5C1F1F),
-        borderRadius: BorderRadius.circular(cellSize * 0.25),
-        boxShadow: isLit
-            ? [
-                BoxShadow(
-                  color: color.withValues(alpha: 0.5),
-                  blurRadius: cellSize * 0.3,
-                ),
-              ]
-            : null,
-      ),
-    );
-  }
+  @override
+  bool shouldRepaint(covariant _MatrixPainter oldDelegate) => true;
 }

@@ -3,9 +3,11 @@ import 'package:flutter/services.dart';
 import 'package:led_matrix_app/screens/camera_mode_screen.dart';
 
 import '../config/constants.dart';
+import '../models/app_settings.dart';
 import '../services/text_mode_controller.dart';
 import '../widgets/ble_status_indicator.dart';
 import '../widgets/color_palette.dart';
+import '../widgets/matrix_panel.dart';
 import '../widgets/matrix_preview.dart';
 import 'draw_mode_screen.dart';
 import 'settings_screen.dart';
@@ -81,7 +83,7 @@ class _TextModeScreenState extends State<TextModeScreen> {
   }
 
   Future<void> _openSettings() async {
-    final result = await Navigator.push<Map<String, dynamic>>(
+    final result = await Navigator.push<AppSettings>(
       context,
       MaterialPageRoute(
         builder: (context) => SettingsScreen(
@@ -95,10 +97,10 @@ class _TextModeScreenState extends State<TextModeScreen> {
 
     if (result != null) {
       _controller.updateSettings(
-        emergencyMessage: result['emergencyMessage'] as String?,
-        scrollSpeedMs: result['scrollSpeedMs'] as int?,
-        blinkIntervalMs: result['blinkIntervalMs'] as int?,
-        brightness: result['brightness'] as int?,
+        emergencyMessage: result.emergencyMessage,
+        scrollSpeedMs: result.scrollSpeedMs,
+        blinkIntervalMs: result.blinkIntervalMs,
+        brightness: result.brightness,
       );
     }
   }
@@ -307,51 +309,13 @@ class _TextModeScreenState extends State<TextModeScreen> {
     );
   }
 
-  Widget _buildPanelHeader() {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.symmetric(vertical: 7),
-      decoration: BoxDecoration(
-        color: AppConstants.accentColor.withValues(alpha: 0.10),
-        borderRadius: const BorderRadius.vertical(
-          top: Radius.circular(AppConstants.defaultRadius - 2),
-        ),
-      ),
-      child: const Text(
-        'PANNEAU LED  ·  32 × 16',
-        textAlign: TextAlign.center,
-        style: TextStyle(
-          color: AppConstants.backgroundColor,
-          fontSize: 11,
-          fontWeight: FontWeight.w700,
-          letterSpacing: 2.0,
-        ),
-      ),
-    );
-  }
-
   Widget _buildMatrixPreview() {
     return Flexible(
       flex: 2,
       child: Padding(
         padding: const EdgeInsets.all(AppConstants.defaultPadding),
-        child: Container(
-          decoration: BoxDecoration(
-            color: const Color(0xFF3D1010),
-            borderRadius: BorderRadius.circular(AppConstants.defaultRadius),
-            border: Border.all(color: AppConstants.borderColor, width: 1),
-          ),
-          child: Column(
-            children: [
-              _buildPanelHeader(),
-              Expanded(
-                child: MatrixPreview(
-                  matrix: _controller.matrix,
-                  showGlow: true,
-                ),
-              ),
-            ],
-          ),
+        child: MatrixPanel(
+          child: MatrixPreview(matrix: _controller.matrix, showGlow: true),
         ),
       ),
     );
