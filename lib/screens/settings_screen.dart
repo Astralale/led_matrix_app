@@ -10,6 +10,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_blue_plus/flutter_blue_plus.dart';
 import '../config/constants.dart';
 import '../services/ble_service.dart';
+import '../services/storage_service.dart';
 
 class SettingsScreen extends StatefulWidget {
   final String emergencyMessage;
@@ -185,6 +186,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       setState(() {
         _emergencyMessage = result.toUpperCase();
       });
+      StorageService.instance.emergencyMessage = _emergencyMessage;
     }
     controller.dispose();
   }
@@ -374,7 +376,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 return Padding(
                   padding: const EdgeInsets.only(left: 6),
                   child: GestureDetector(
-                    onTap: () => setState(() => _scrollSpeedMs = entry.key),
+                    onTap: () {
+                      setState(() => _scrollSpeedMs = entry.key);
+                      StorageService.instance.scrollSpeedMs = entry.key;
+                    },
                     child: AnimatedContainer(
                       duration: const Duration(milliseconds: 150),
                       padding: const EdgeInsets.symmetric(
@@ -480,7 +485,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 return Padding(
                   padding: const EdgeInsets.only(left: 6),
                   child: GestureDetector(
-                    onTap: () => setState(() => _blinkIntervalMs = entry.key),
+                    onTap: () {
+                      setState(() => _blinkIntervalMs = entry.key);
+                      StorageService.instance.blinkIntervalMs = entry.key;
+                    },
                     child: AnimatedContainer(
                       duration: const Duration(milliseconds: 150),
                       padding: const EdgeInsets.symmetric(
@@ -589,7 +597,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   setState(() => _brightness = value.round());
                 },
                 onChangeEnd: (value) {
-                  BleService.instance.sendBrightness(value.round());
+                  final b = value.round();
+                  StorageService.instance.brightness = b;
+                  BleService.instance.sendBrightness(b);
                 },
               ),
             ),

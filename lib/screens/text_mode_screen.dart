@@ -3,12 +3,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../config/constants.dart';
 import '../models/led_matrix.dart';
+import '../services/ble_service.dart';
+import '../services/storage_service.dart';
 import '../services/text_renderer.dart';
-import '../widgets/matrix_preview.dart';
+import '../widgets/ble_status_indicator.dart';
 import '../widgets/color_palette.dart';
+import '../widgets/matrix_preview.dart';
 import 'draw_mode_screen.dart';
 import 'settings_screen.dart';
-import '../services/ble_service.dart';
 
 class TextModeScreen extends StatefulWidget {
   const TextModeScreen({super.key});
@@ -52,6 +54,17 @@ class _TextModeScreenState extends State<TextModeScreen> {
       DeviceOrientation.portraitUp,
       DeviceOrientation.portraitDown,
     ]);
+    _loadSettings();
+  }
+
+  /// Charge les paramètres persistés.
+  void _loadSettings() {
+    final storage = StorageService.instance;
+    _emergencyMessage = storage.emergencyMessage;
+    _scrollSpeedMs = storage.scrollSpeedMs;
+    _blinkIntervalMs = storage.blinkIntervalMs;
+    _brightness = storage.brightness;
+    _selectedColorIndex = storage.selectedColorIndex;
   }
 
   @override
@@ -281,14 +294,17 @@ class _TextModeScreenState extends State<TextModeScreen> {
     );
 
     if (result != null) {
+      final storage = StorageService.instance;
       setState(() {
         final msg = result['emergencyMessage'] as String?;
         if (msg != null && msg.isNotEmpty) {
           _emergencyMessage = msg.toUpperCase();
+          storage.emergencyMessage = _emergencyMessage;
         }
         final speed = result['scrollSpeedMs'] as int?;
         if (speed != null) {
           _scrollSpeedMs = speed;
+          storage.scrollSpeedMs = speed;
           if (_isScrolling) {
             _restartActiveScroll();
           }
@@ -296,6 +312,7 @@ class _TextModeScreenState extends State<TextModeScreen> {
         final blinkInterval = result['blinkIntervalMs'] as int?;
         if (blinkInterval != null) {
           _blinkIntervalMs = blinkInterval;
+          storage.blinkIntervalMs = blinkInterval;
           if (_blinkEnabled) {
             _restartActiveBlink();
           }
@@ -303,6 +320,7 @@ class _TextModeScreenState extends State<TextModeScreen> {
         final brightness = result['brightness'] as int?;
         if (brightness != null) {
           _brightness = brightness;
+          storage.brightness = brightness;
         }
       });
     }
@@ -508,6 +526,10 @@ class _TextModeScreenState extends State<TextModeScreen> {
         ],
       ),
       actions: [
+        const Padding(
+          padding: EdgeInsets.only(right: 4),
+          child: BleStatusIndicator(),
+        ),
         Padding(
           padding: const EdgeInsets.only(right: 4),
           child: ElevatedButton(
@@ -747,6 +769,7 @@ class _TextModeScreenState extends State<TextModeScreen> {
             selectedColorIndex: _selectedColorIndex,
             onColorSelected: (index) {
               setState(() => _selectedColorIndex = index);
+              StorageService.instance.selectedColorIndex = index;
             },
             availableColors: AppConstants.textModeColors,
           ),

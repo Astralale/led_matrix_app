@@ -8,6 +8,7 @@
 import 'package:flutter/material.dart';
 import 'config/constants.dart';
 import 'screens/text_mode_screen.dart';
+import 'services/notification_service.dart';
 
 class LedMatrixApp extends StatelessWidget {
   const LedMatrixApp({super.key});
@@ -15,6 +16,9 @@ class LedMatrixApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
+      // Clé globale pour les notifications (SnackBar)
+      scaffoldMessengerKey: NotificationService.messengerKey,
+
       // Métadonnées
       title: 'LED Matrix Controller',
       debugShowCheckedModeBanner: false,
