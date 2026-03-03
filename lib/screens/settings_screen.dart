@@ -1,3 +1,10 @@
+// ============================================================================
+// 📁 screens/settings_screen.dart
+// ============================================================================
+// Écran des paramètres : BLE, message d'urgence, vitesse, luminosité
+// Version complète avec scan BLE et liste des appareils
+// ============================================================================
+
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_blue_plus/flutter_blue_plus.dart';
@@ -45,7 +52,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     _scrollSpeedMs = widget.scrollSpeedMs;
     _brightness = widget.brightness;
     _bleSub = BleService.instance.stateStream.listen(
-      (state) => setState(() => _bleState = state),
+          (state) => setState(() => _bleState = state),
     );
   }
 
@@ -78,7 +85,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
     _scanSub = FlutterBluePlus.scanResults.listen((results) {
       final map = <String, ScanResult>{};
       for (final r in results) {
-        map[r.device.remoteId.toString()] = r;
+        if (r.device.platformName.isNotEmpty) {  // ← Filtre ici
+          map[r.device.remoteId.toString()] = r;
+        }
       }
       if (mounted) setState(() => _foundDevices = map.values.toList());
     });
@@ -478,7 +487,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     final connected = _bleState == BleConnectionState.connected;
     final connecting =
         _bleState == BleConnectionState.connecting ||
-        _bleState == BleConnectionState.scanning;
+            _bleState == BleConnectionState.scanning;
     final error = _bleState == BleConnectionState.error;
 
     final Color iconBg = connected
@@ -524,13 +533,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
           ),
           child: (connecting || _isScanning)
               ? SizedBox(
-                  width: 22,
-                  height: 22,
-                  child: CircularProgressIndicator(
-                    strokeWidth: 2,
-                    color: AppConstants.accentColor,
-                  ),
-                )
+            width: 22,
+            height: 22,
+            child: CircularProgressIndicator(
+              strokeWidth: 2,
+              color: AppConstants.accentColor,
+            ),
+          )
               : Icon(icon, color: iconColor, size: 22),
         ),
         title: Text(
@@ -551,14 +560,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
         trailing: connecting
             ? null
             : Icon(
-                connected
-                    ? Icons.link_off
-                    : _isScanning
-                    ? Icons.stop_circle_outlined
-                    : Icons.search,
-                color: AppConstants.accentColor.withOpacity(0.4),
-                size: 20,
-              ),
+          connected
+              ? Icons.link_off
+              : _isScanning
+              ? Icons.stop_circle_outlined
+              : Icons.search,
+          color: AppConstants.accentColor.withOpacity(0.4),
+          size: 20,
+        ),
         onTap: () {
           if (connected) {
             BleService.instance.disconnect();

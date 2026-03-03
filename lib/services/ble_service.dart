@@ -2,62 +2,47 @@ import 'dart:async';
 import 'dart:typed_data';
 
 import 'package:flutter_blue_plus/flutter_blue_plus.dart';
-
-/// États possibles de la connexion BLE.
 enum BleConnectionState { disconnected, scanning, connecting, connected, error }
-
-/// Service singleton pour communiquer avec l'ESP32 via BLE.
-///
-/// Protocole de trame :
-///   [0xAA, 0x55, pixel_0, pixel_1, ..., pixel_511]  — 514 octets
-///   Chaque pixel = index couleur 0-9 (correspond à AppConstants.colorPalette)
 class BleService {
   BleService._();
   static final BleService instance = BleService._();
 
-  // ─── UUIDs (doivent correspondre au sketch Arduino) ─────────────────────────
   static const String _serviceUuid = '4fafc201-1fb5-459e-8fcc-c5c9c331914b';
   static const String _charUuid = 'beb5483e-36e1-4688-b7f5-ea07361b26a8';
   static const String _deviceName = 'LED_MATRIX';
 
-  // ─── Constantes de protocole ────────────────────────────────────────────────
   static const int _frameSize = 512; // 32 × 16 pixels
   static const int _chunkSize = 128; // Taille max d'un paquet BLE (safe)
   static const int _chunkDelay = 20; // ms entre deux paquets
 
-  // ─── État interne ───────────────────────────────────────────────────────────
   BluetoothDevice? _device;
   BluetoothCharacteristic? _characteristic;
   StreamSubscription? _connSub;
   bool _sending = false;
 
   final StreamController<BleConnectionState> _stateCtrl =
-      StreamController<BleConnectionState>.broadcast();
+  StreamController<BleConnectionState>.broadcast();
 
   BleConnectionState _state = BleConnectionState.disconnected;
 
-  /// Flux de l'état de connexion — écouter depuis l'UI.
   Stream<BleConnectionState> get stateStream => _stateCtrl.stream;
 
-  /// État courant (synchrone).
   BleConnectionState get currentState => _state;
 
   bool get isConnected => _state == BleConnectionState.connected;
 
-  // ─── Gestion de l'état ──────────────────────────────────────────────────────
   void _setState(BleConnectionState s) {
     _state = s;
     _stateCtrl.add(s);
   }
 
-  // ─── Connexion ──────────────────────────────────────────────────────────────
 
-  /// Scanne et se connecte à l'appareil nommé [_deviceName].
   Future<void> connect() async {
     if (_state == BleConnectionState.connecting ||
         _state == BleConnectionState.scanning ||
-        _state == BleConnectionState.connected)
+        _state == BleConnectionState.connected) {
       return;
+    }
 
     _setState(BleConnectionState.scanning);
 
@@ -93,11 +78,11 @@ class BleService {
     }
   }
 
-  /// Se connecte à un appareil BLE spécifique choisi par l'utilisateur.
   Future<void> connectToDevice(BluetoothDevice device) async {
     if (_state == BleConnectionState.connecting ||
-        _state == BleConnectionState.connected)
+        _state == BleConnectionState.connected) {
       return;
+    }
     _setState(BleConnectionState.connecting);
     try {
       await _doConnect(device);
@@ -109,7 +94,6 @@ class BleService {
     }
   }
 
-  /// Lance un scan BLE et retourne les appareils trouvés (avec nom uniquement).
   Future<List<ScanResult>> scanForDevices({
     Duration timeout = const Duration(seconds: 10),
   }) async {
@@ -123,14 +107,12 @@ class BleService {
       }
     });
 
-    // Attendre la fin du scan
     await FlutterBluePlus.isScanning.where((v) => v == false).first;
     await sub.cancel();
 
     return resultsMap.values.toList();
   }
 
-  /// Logique partagée de connexion à un [device] déjà identifié.
   Future<void> _doConnect(BluetoothDevice device) async {
     _device = device;
     _setState(BleConnectionState.connecting);
@@ -170,7 +152,6 @@ class BleService {
     });
   }
 
-  /// Déconnecte l'appareil courant.
   Future<void> disconnect() async {
     _connSub?.cancel();
     _connSub = null;
@@ -180,18 +161,20 @@ class BleService {
     _setState(BleConnectionState.disconnected);
   }
 
-  // ─── Envoi de la matrix ─────────────────────────────────────────────────────
-
-  /// Envoie la matrix vers l'ESP32.
-  ///
-  /// [pixels] : liste 16 × 32 d'indices couleur (0-9).
-  /// Retourne silencieusement si non connecté ou si un envoi est déjà en cours.
   Future<void> sendMatrix(List<List<int>> pixels) async {
     final char = _characteristic;
-    if (char == null || _sending) return;
+    if (char == null) {
+      print('BLE: Pas de caractéristique, non connecté');
+      return;
+    }
+    if (_sending) {
+      print('BLE: Envoi déjà en cours');
+      return;
+    }
     _sending = true;
 
     try {
+      print('BLE: Préparation de la trame...');
       final frame = Uint8List(_frameSize + 2);
       frame[0] = 0xAA;
       frame[1] = 0x55;
@@ -202,14 +185,19 @@ class BleService {
         }
       }
 
+      print('BLE: Envoi de ${frame.length} octets...');
       int offset = 0;
+      int chunkNum = 0;
       while (offset < frame.length) {
         final end = (offset + _chunkSize).clamp(0, frame.length);
         await char.write(frame.sublist(offset, end), withoutResponse: true);
         await Future<void>.delayed(const Duration(milliseconds: _chunkDelay));
+        chunkNum++;
         offset = end;
       }
-    } catch (_) {
+      print('BLE: Envoi terminé ($chunkNum chunks)');
+    } catch (e) {
+      print('BLE: Erreur envoi: $e');
     } finally {
       _sending = false;
     }
