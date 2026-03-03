@@ -175,6 +175,24 @@ class _TextModeScreenState extends State<TextModeScreen> {
     });
   }
 
+  void _displayHelp() {
+    _stopScrollingAndReset();
+    _textController.text = 'HELP';
+    const helpColor = 1; // Rouge
+    const text = 'HELP';
+    final centeredX =
+        (AppConstants.matrixWidth - TextRenderer.getTextWidth(text)) ~/ 2;
+    setState(() {
+      _matrix.clear();
+      TextRenderer.drawText(
+        _matrix,
+        text,
+        colorIndex: helpColor,
+        startX: centeredX.clamp(0, AppConstants.matrixWidth - 1),
+      );
+    });
+  }
+
   Future<void> _openDrawMode() async {
     _stopScrollingAndReset();
     final result = await Navigator.push<List<List<int>>>(
@@ -218,6 +236,10 @@ class _TextModeScreenState extends State<TextModeScreen> {
           const SizedBox(height: 8),
 
           _buildScrollToggle(),
+
+          const SizedBox(height: 8),
+
+          _buildHelpButton(),
 
           const SizedBox(height: 8),
 
@@ -445,6 +467,38 @@ class _TextModeScreenState extends State<TextModeScreen> {
             availableColors: AppConstants.textModeColors,
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildHelpButton() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppConstants.defaultPadding,
+      ),
+      child: SizedBox(
+        width: double.infinity,
+        height: 50,
+        child: ElevatedButton.icon(
+          onPressed: _displayHelp,
+          icon: const Icon(Icons.warning_amber_rounded, size: 22),
+          label: const Text(
+            'Urgence',
+            style: TextStyle(
+              fontSize: 15,
+              fontWeight: FontWeight.w800,
+              letterSpacing: 1.2,
+            ),
+          ),
+          style: ElevatedButton.styleFrom(
+            backgroundColor: const Color(0xFFCC0000),
+            foregroundColor: Colors.white,
+            elevation: 3,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(AppConstants.defaultRadius),
+            ),
+          ),
+        ),
       ),
     );
   }
