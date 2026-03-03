@@ -1,228 +1,204 @@
-/**
- * LED Matrix ESP32 — BLE Receiver
- *
- * Configuration matérielle :
- *   - 2 dalles WS2812B 32×8 (branchées en série sur DATA_PIN)
- *     · Dalle 1 : rangées 0-7  (256 LEDs)
- *     · Dalle 2 : rangées 8-15 (256 LEDs)
- *   - Câblage serpentin par dalle (rangées paires G→D, impaires D→G)
- *
- * Protocole BLE (depuis l'app Flutter) :
- *   Trame = [0xAA, 0x55, pixel_0, pixel_1, ..., pixel_511]  =  514 octets
- *   Chaque pixel = index couleur 0-9
- *     0=Éteint  1=Rouge    2=Vert   3=Bleu  4=Jaune
- *     5=Magenta 6=Cyan     7=Blanc  8=Orange 9=Violet
- *
- * Bibliothèques requises (Arduino Library Manager) :
- *   - FastLED  >= 3.6
- *   - ESP32 BLE Arduino (inclus dans le board package ESP32)
- */
-
+#include <Adafruit_NeoPixel.h>
 #include <BLEDevice.h>
 #include <BLEServer.h>
 #include <BLEUtils.h>
 #include <BLE2902.h>
-#include <FastLED.h>
 
-// ─── Configuration matérielle ─────────────────────────────────────────────────
-#define DATA_PIN        5       // Broche données WS2812B (GPIO 5)
-#define MATRIX_WIDTH    32
-#define MATRIX_HEIGHT   16
-#define PANEL_HEIGHT    8       // Hauteur d'une dalle (2 dalles × 8 rangées)
-#define NUM_LEDS        (MATRIX_WIDTH * MATRIX_HEIGHT)  // 512
-#define LED_BRIGHTNESS  60      // 0-255 — réduire pour économiser le courant
+#define PIN_TOP 12
+#define PIN_BOT 14
+#define NUM_LEDS 256
 
-// ─── UUIDs BLE ────────────────────────────────────────────────────────────────
+#define WIDTH 32
+#define HEIGHT 16
+#define PANEL_H 8
+#define PANEL_W 32
+
 #define SERVICE_UUID        "4fafc201-1fb5-459e-8fcc-c5c9c331914b"
 #define CHARACTERISTIC_UUID "beb5483e-36e1-4688-b7f5-ea07361b26a8"
-#define DEVICE_NAME         "LED_MATRIX"
 
-// ─── Protocole de trame ───────────────────────────────────────────────────────
-#define FRAME_SIZE    512
-#define HEADER_1      0xAA
-#define HEADER_2      0x55
-#define BRIGHT_HEADER 0xBB
+Adafruit_NeoPixel stripTop(NUM_LEDS, PIN_TOP, NEO_GRB + NEO_KHZ800);
+Adafruit_NeoPixel stripBot(NUM_LEDS, PIN_BOT, NEO_GRB + NEO_KHZ800);
 
-// ─── Variables globales ───────────────────────────────────────────────────────
-CRGB leds[NUM_LEDS];
+uint8_t brightness = 100;
 
-uint8_t  frameBuffer[FRAME_SIZE];
-uint16_t bufPos          = 0;
-bool     headerReceived  = false;   // true = les 2 octets 0xAA 0x55 ont été lus
-bool     waitHeader1     = true;    // attend 0xAA
-volatile bool newFrameReady = false;
+struct RGB {
+    uint8_t r, g, b;
+};
 
-BLEServer* pServer        = nullptr;
-bool deviceConnected      = false;
-bool oldDeviceConnected   = false;
+const RGB PALETTE[10] = {
+        { 0, 0, 0 },
+        { 255, 0, 0 },
+        { 0, 255, 0 },
+        { 0, 0, 255 },
+        { 255, 255, 0 },
+        { 255, 0, 255 },
+        { 0, 255, 255 },
+        { 255, 255, 255 },
+        { 255, 136, 0 },
+        { 136, 0, 255 },
+};
 
-// ─── Palette de couleurs ──────────────────────────────────────────────────────
-CRGB indexToColor(uint8_t idx) {
-  switch (idx) {
-    case 1:  return CRGB(255,   0,   0);  // Rouge
-    case 2:  return CRGB(  0, 255,   0);  // Vert
-    case 3:  return CRGB(  0,   0, 255);  // Bleu
-    case 4:  return CRGB(255, 255,   0);  // Jaune
-    case 5:  return CRGB(255,   0, 255);  // Magenta
-    case 6:  return CRGB(  0, 255, 255);  // Cyan
-    case 7:  return CRGB(255, 255, 255);  // Blanc
-    case 8:  return CRGB(255, 136,   0);  // Orange
-    case 9:  return CRGB(136,   0, 255);  // Violet
-    case 10: return CRGB(255,  20, 147);  // Rose
-    case 11: return CRGB(255,  68,   0);  // Rouge-orange
-    case 12: return CRGB(128, 255,   0);  // Vert lime
-    case 13: return CRGB(  0, 170, 255);  // Bleu ciel
-    case 14: return CRGB(255, 215,   0);  // Or
-    case 15: return CRGB(  0, 255, 176);  // Turquoise
-    default: return CRGB(  0,   0,   0);  // Éteint
-  }
-}
+uint8_t matrix[HEIGHT][WIDTH] = {0};
 
-// ─── Mapping pixel (x, y) → index LED ────────────────────────────────────────
-// Câblage serpentin : rangées paires de gauche à droite,
-//                     rangées impaires de droite à gauche.
-int pixelToLed(int x, int y) {
-  int panel  = y / PANEL_HEIGHT;                         // 0 ou 1
-  int localY = y % PANEL_HEIGHT;                         // 0-7 dans la dalle
-  int base   = panel * (MATRIX_WIDTH * PANEL_HEIGHT);    // offset LED de la dalle
-  int idx    = (localY % 2 == 0)
-               ? localY * MATRIX_WIDTH + x               // G → D
-               : localY * MATRIX_WIDTH + (MATRIX_WIDTH - 1 - x); // D → G
-  return base + idx;
-}
+uint8_t rxBuffer[600];
+int rxIndex = 0;
+bool newMatrixReady = false;
 
-// ─── Rendu de la trame sur les LEDs ──────────────────────────────────────────
-void renderFrame() {
-  for (int y = 0; y < MATRIX_HEIGHT; y++) {
-    for (int x = 0; x < MATRIX_WIDTH; x++) {
-      uint8_t ci = frameBuffer[y * MATRIX_WIDTH + x];
-      leds[pixelToLed(x, y)] = indexToColor(ci);
-    }
-  }
-  FastLED.show();
-}
+BLEServer* pServer = nullptr;
+BLECharacteristic* pCharacteristic = nullptr;
+bool deviceConnected = false;
 
-// ─── Callbacks BLE ────────────────────────────────────────────────────────────
 class ServerCallbacks : public BLEServerCallbacks {
-  void onConnect(BLEServer* pServer) override {
-    deviceConnected = true;
-    Serial.println("[BLE] Client connecté");
-  }
-  void onDisconnect(BLEServer* pServer) override {
-    deviceConnected = false;
-    Serial.println("[BLE] Client déconnecté");
-  }
-};
-
-class RxCallbacks : public BLECharacteristicCallbacks {
-  void onWrite(BLECharacteristic* pChar) override {
-    std::string data = pChar->getValue();
-
-    for (size_t i = 0; i < data.size(); i++) {
-      uint8_t b = (uint8_t)data[i];
-
-      // -- Recherche de l'entête 0xAA 0x55 ou 0xBB 0x55 --
-      if (waitHeader1) {
-        if (b == HEADER_1) {
-          waitHeader1 = false;
-        } else if (b == BRIGHT_HEADER && i + 2 < data.size()) {
-          uint8_t next = (uint8_t)data[i + 1];
-          if (next == HEADER_2) {
-            uint8_t brightness = (uint8_t)data[i + 2];
-            FastLED.setBrightness(brightness);
-            FastLED.show();
-            Serial.printf("[LED] Luminosité réglée à %d\n", brightness);
-            i += 2;
-          }
-        }
-        continue;
-      }
-      if (!headerReceived) {
-        if (b == HEADER_2) {
-          headerReceived = true;
-          bufPos = 0;
-        } else {
-          // Entête invalide, on recommence
-          waitHeader1 = true;
-        }
-        continue;
-      }
-
-      // -- Accumulation des données de la trame --
-      frameBuffer[bufPos++] = b;
-      if (bufPos >= FRAME_SIZE) {
-        newFrameReady  = true;
-        headerReceived = false;
-        waitHeader1    = true;
-        bufPos         = 0;
-        Serial.println("[LED] Trame reçue — affichage");
-      }
+    void onConnect(BLEServer* pServer) {
+        deviceConnected = true;
+        Serial.println(">>> Client connecte <<<");
     }
-  }
+
+    void onDisconnect(BLEServer* pServer) {
+        deviceConnected = false;
+        Serial.println(">>> Client deconnecte <<<");
+        rxIndex = 0;
+        BLEDevice::startAdvertising();
+    }
 };
 
-// ─── Setup ────────────────────────────────────────────────────────────────────
-void setup() {
-  Serial.begin(115200);
-  Serial.println("[INIT] Démarrage LED Matrix ESP32");
+class CharacteristicCallbacks : public BLECharacteristicCallbacks {
+    void onWrite(BLECharacteristic* pCharacteristic) {
+        String value = pCharacteristic->getValue();
+        int len = value.length();
 
-  // FastLED
-  FastLED.addLeds<WS2812B, DATA_PIN, GRB>(leds, NUM_LEDS);
-  FastLED.setBrightness(LED_BRIGHTNESS);
-  FastLED.clear(true);
+        Serial.print("Chunk recu: ");
+        Serial.print(len);
+        Serial.print(" octets, total: ");
+        Serial.println(rxIndex + len);
 
-  // Animation de démarrage : balayage rouge → éteint
-  for (int i = 0; i < NUM_LEDS; i++) {
-    leds[i] = CRGB::Red;
-    FastLED.show();
-    delay(1);
-  }
-  FastLED.clear(true);
+        for (int i = 0; i < len; i++) {
+            if (rxIndex < 600) {
+                rxBuffer[rxIndex++] = (uint8_t)value[i];
+            }
+        }
 
-  // BLE
-  BLEDevice::init(DEVICE_NAME);
-  BLEDevice::setMTU(517);  // MTU max pour recevoir de grandes trames
+        Serial.print("Header: 0x");
+        Serial.print(rxBuffer[0], HEX);
+        Serial.print(" 0x");
+        Serial.println(rxBuffer[1], HEX);
 
-  pServer = BLEDevice::createServer();
-  pServer->setCallbacks(new ServerCallbacks());
+        if (rxBuffer[0] == 0xAA && rxBuffer[1] == 0x55 && rxIndex >= 514) {
+            Serial.println("*** MATRICE COMPLETE ***");
+            for (int y = 0; y < HEIGHT; y++) {
+                for (int x = 0; x < WIDTH; x++) {
+                    matrix[y][x] = rxBuffer[2 + y * WIDTH + x];
+                    if (matrix[y][x] > 9) matrix[y][x] = 0;
+                }
+            }
+            newMatrixReady = true;
+            rxIndex = 0;
+        }
+        else if (rxBuffer[0] == 0xBB && rxBuffer[1] == 0x55 && rxIndex >= 3) {
+            brightness = rxBuffer[2];
+            stripTop.setBrightness(brightness);
+            stripBot.setBrightness(brightness);
+            Serial.print("Luminosite: ");
+            Serial.println(brightness);
+            rxIndex = 0;
+        }
+    }
+};
 
-  BLEService* pService = pServer->createService(SERVICE_UUID);
-
-  BLECharacteristic* pChar = pService->createCharacteristic(
-    CHARACTERISTIC_UUID,
-    BLECharacteristic::PROPERTY_WRITE |
-    BLECharacteristic::PROPERTY_WRITE_NR   // Write Without Response (plus rapide)
-  );
-  pChar->setCallbacks(new RxCallbacks());
-
-  pService->start();
-
-  BLEAdvertising* pAdvert = BLEDevice::getAdvertising();
-  pAdvert->addServiceUUID(SERVICE_UUID);
-  pAdvert->setScanResponse(true);
-  pAdvert->setMinPreferred(0x06);
-  BLEDevice::startAdvertising();
-
-  Serial.println("[BLE] Publicité démarrée — en attente de connexion...");
+int panelXYToIndex(int x, int y) {
+    if (x < 0 || x >= PANEL_W || y < 0 || y >= PANEL_H) return -1;
+    if (x % 2 == 0) return x * PANEL_H + y;
+    return x * PANEL_H + (PANEL_H - 1 - y);
 }
 
-// ─── Loop ─────────────────────────────────────────────────────────────────────
+void printMatrixToConsole() {
+    Serial.println("=== MATRICE 32x16 ===");
+    for (int y = 0; y < HEIGHT; y++) {
+        Serial.print("L");
+        if (y < 10) Serial.print("0");
+        Serial.print(y);
+        Serial.print(": ");
+        for (int x = 0; x < WIDTH; x++) {
+            Serial.print(matrix[y][x]);
+        }
+        Serial.println();
+    }
+    Serial.println("=====================");
+}
+
+void displayMatrix() {
+    stripTop.clear();
+    stripBot.clear();
+
+    for (int y = 0; y < HEIGHT; y++) {
+        for (int x = 0; x < WIDTH; x++) {
+            uint8_t colorIndex = matrix[y][x];
+            if (colorIndex == 0) continue;
+            if (colorIndex > 9) colorIndex = 0;
+
+            RGB c = PALETTE[colorIndex];
+
+            if (y < 8) {
+                int idx = panelXYToIndex(x, y);
+                if (idx >= 0) stripTop.setPixelColor(idx, stripTop.Color(c.r, c.g, c.b));
+            } else {
+                int idx = panelXYToIndex(x, y - 8);
+                if (idx >= 0) stripBot.setPixelColor(idx, stripBot.Color(c.r, c.g, c.b));
+            }
+        }
+    }
+
+    stripTop.show();
+    stripBot.show();
+}
+
+void setup() {
+    Serial.begin(115200);
+    delay(1000);
+    Serial.println("\n\n=== DEMARRAGE ===");
+
+    stripTop.begin();
+    stripBot.begin();
+    stripTop.setBrightness(brightness);
+    stripBot.setBrightness(brightness);
+    stripTop.clear();
+    stripBot.clear();
+    stripTop.show();
+    stripBot.show();
+
+    BLEDevice::init("LED_MATRIX");
+    pServer = BLEDevice::createServer();
+    pServer->setCallbacks(new ServerCallbacks());
+
+    BLEService* pService = pServer->createService(SERVICE_UUID);
+
+    pCharacteristic = pService->createCharacteristic(
+            CHARACTERISTIC_UUID,
+            BLECharacteristic::PROPERTY_WRITE | BLECharacteristic::PROPERTY_WRITE_NR
+    );
+
+    pCharacteristic->setCallbacks(new CharacteristicCallbacks());
+    pCharacteristic->addDescriptor(new BLE2902());
+
+    pService->start();
+
+    BLEAdvertising* pAdvertising = BLEDevice::getAdvertising();
+    pAdvertising->addServiceUUID(SERVICE_UUID);
+    pAdvertising->setScanResponse(true);
+    pAdvertising->setMinPreferred(0x06);
+    pAdvertising->setMinPreferred(0x12);
+    BLEDevice::startAdvertising();
+
+    Serial.println("LED_MATRIX BLE Ready!");
+    Serial.println("En attente de connexion...");
+}
+
 void loop() {
-  // Afficher la nouvelle trame si disponible
-  if (newFrameReady) {
-    newFrameReady = false;
-    renderFrame();
-  }
+    if (newMatrixReady) {
+        printMatrixToConsole();
+        newMatrixReady = false;
+    }
 
-  // Redémarrer la publicité BLE après déconnexion
-  if (!deviceConnected && oldDeviceConnected) {
-    delay(500);
-    pServer->startAdvertising();
-    Serial.println("[BLE] Publicité relancée");
-    oldDeviceConnected = false;
-  }
-
-  if (deviceConnected && !oldDeviceConnected) {
-    oldDeviceConnected = true;
-  }
+    displayMatrix();
+    delay(10);
 }
