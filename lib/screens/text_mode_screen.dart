@@ -1,14 +1,17 @@
 import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:led_matrix_app/screens/camera_mode_screen.dart';
+
 import '../config/constants.dart';
 import '../models/led_matrix.dart';
+import '../services/ble_service.dart';
 import '../services/text_renderer.dart';
-import '../widgets/matrix_preview.dart';
 import '../widgets/color_palette.dart';
+import '../widgets/matrix_preview.dart';
 import 'draw_mode_screen.dart';
 import 'settings_screen.dart';
-import '../services/ble_service.dart';
 
 class TextModeScreen extends StatefulWidget {
   const TextModeScreen({super.key});
@@ -267,6 +270,13 @@ class _TextModeScreenState extends State<TextModeScreen> {
     }
   }
 
+  Future<void> _openCameraView() async {
+    await Navigator.push<Map<String, dynamic>>(
+      context,
+      MaterialPageRoute(builder: (context) => CameraModeScreen()),
+    );
+  }
+
   Future<void> _openSettings() async {
     final result = await Navigator.push<Map<String, dynamic>>(
       context,
@@ -522,6 +532,22 @@ class _TextModeScreenState extends State<TextModeScreen> {
               ),
             ),
             child: const Icon(Icons.warning_amber_rounded, size: 18),
+          ),
+        ),
+        Padding(
+          padding: const EdgeInsets.only(right: 4),
+          child: ElevatedButton(
+            onPressed: _openCameraView,
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppConstants.borderColor,
+              foregroundColor: AppConstants.accentColor,
+              elevation: 0,
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(AppConstants.defaultRadius),
+              ),
+            ),
+            child: const Icon(Icons.camera, size: 16),
           ),
         ),
         Padding(

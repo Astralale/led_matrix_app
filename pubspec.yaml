@@ -31,8 +31,13 @@ dependencies:
   flutter:
     sdk: flutter
 
+  http: ^0.13.6
+  flutter_mjpeg: ^2.0.4
   cupertino_icons: ^1.0.8
   flutter_blue_plus: ^1.35.3
+  path_provider: ^2.1.5
+  ffmpeg_kit_flutter_new: ^4.1.0
+  photo_manager: ^3.6.3
 
 dev_dependencies:
   flutter_test:
