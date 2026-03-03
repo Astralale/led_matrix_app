@@ -52,7 +52,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     _scrollSpeedMs = widget.scrollSpeedMs;
     _brightness = widget.brightness;
     _bleSub = BleService.instance.stateStream.listen(
-          (state) => setState(() => _bleState = state),
+      (state) => setState(() => _bleState = state),
     );
   }
 
@@ -85,7 +85,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
     _scanSub = FlutterBluePlus.scanResults.listen((results) {
       final map = <String, ScanResult>{};
       for (final r in results) {
-        if (r.device.platformName.isNotEmpty) {  // ← Filtre ici
+        if (r.device.platformName.isNotEmpty) {
+          // ← Filtre ici
           map[r.device.remoteId.toString()] = r;
         }
       }
@@ -161,7 +162,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 }
               },
               style: ElevatedButton.styleFrom(
-                backgroundColor: AppConstants.dangerColor,
+                backgroundColor: AppConstants.accentColor,
                 foregroundColor: Colors.white,
                 elevation: 0,
                 shape: RoundedRectangleBorder(
@@ -275,12 +276,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
         leading: Container(
           padding: const EdgeInsets.all(8),
           decoration: BoxDecoration(
-            color: AppConstants.dangerColor.withOpacity(0.1),
+            color: AppConstants.accentColor.withOpacity(0.08),
             borderRadius: BorderRadius.circular(8),
           ),
           child: const Icon(
             Icons.warning_amber_rounded,
-            color: AppConstants.dangerColor,
+            color: AppConstants.accentColor,
             size: 22,
           ),
         ),
@@ -487,7 +488,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     final connected = _bleState == BleConnectionState.connected;
     final connecting =
         _bleState == BleConnectionState.connecting ||
-            _bleState == BleConnectionState.scanning;
+        _bleState == BleConnectionState.scanning;
     final error = _bleState == BleConnectionState.error;
 
     final Color iconBg = connected
@@ -533,13 +534,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
           ),
           child: (connecting || _isScanning)
               ? SizedBox(
-            width: 22,
-            height: 22,
-            child: CircularProgressIndicator(
-              strokeWidth: 2,
-              color: AppConstants.accentColor,
-            ),
-          )
+                  width: 22,
+                  height: 22,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    color: AppConstants.accentColor,
+                  ),
+                )
               : Icon(icon, color: iconColor, size: 22),
         ),
         title: Text(
@@ -560,14 +561,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
         trailing: connecting
             ? null
             : Icon(
-          connected
-              ? Icons.link_off
-              : _isScanning
-              ? Icons.stop_circle_outlined
-              : Icons.search,
-          color: AppConstants.accentColor.withOpacity(0.4),
-          size: 20,
-        ),
+                connected
+                    ? Icons.link_off
+                    : _isScanning
+                    ? Icons.stop_circle_outlined
+                    : Icons.search,
+                color: AppConstants.accentColor.withOpacity(0.4),
+                size: 20,
+              ),
         onTap: () {
           if (connected) {
             BleService.instance.disconnect();
