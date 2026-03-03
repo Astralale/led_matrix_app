@@ -14,12 +14,14 @@ import '../services/ble_service.dart';
 class SettingsScreen extends StatefulWidget {
   final String emergencyMessage;
   final int scrollSpeedMs;
+  final int blinkIntervalMs;
   final int brightness;
 
   const SettingsScreen({
     super.key,
     required this.emergencyMessage,
     required this.scrollSpeedMs,
+    required this.blinkIntervalMs,
     required this.brightness,
   });
 
@@ -30,6 +32,7 @@ class SettingsScreen extends StatefulWidget {
 class _SettingsScreenState extends State<SettingsScreen> {
   late String _emergencyMessage;
   late int _scrollSpeedMs;
+  late int _blinkIntervalMs;
   late int _brightness;
 
   // BLE
@@ -50,6 +53,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     super.initState();
     _emergencyMessage = widget.emergencyMessage;
     _scrollSpeedMs = widget.scrollSpeedMs;
+    _blinkIntervalMs = widget.blinkIntervalMs;
     _brightness = widget.brightness;
     _bleSub = BleService.instance.stateStream.listen(
       (state) => setState(() => _bleState = state),
@@ -68,6 +72,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     return {
       'emergencyMessage': _emergencyMessage,
       'scrollSpeedMs': _scrollSpeedMs,
+      'blinkIntervalMs': _blinkIntervalMs,
       'brightness': _brightness,
     };
   }
@@ -214,6 +219,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
             _buildSectionHeader('Défilement'),
             const SizedBox(height: 8),
             _buildScrollSpeedTile(),
+            const SizedBox(height: 20),
+            _buildSectionHeader('Clignotement'),
+            const SizedBox(height: 8),
+            _buildBlinkSpeedTile(),
             const SizedBox(height: 20),
             _buildSectionHeader('Panneau LED'),
             const SizedBox(height: 8),
@@ -366,6 +375,112 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   padding: const EdgeInsets.only(left: 6),
                   child: GestureDetector(
                     onTap: () => setState(() => _scrollSpeedMs = entry.key),
+                    child: AnimatedContainer(
+                      duration: const Duration(milliseconds: 150),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 6,
+                      ),
+                      decoration: BoxDecoration(
+                        color: isSelected
+                            ? AppConstants.accentColor
+                            : AppConstants.backgroundColor,
+                        borderRadius: BorderRadius.circular(
+                          AppConstants.smallRadius,
+                        ),
+                        border: Border.all(
+                          color: isSelected
+                              ? AppConstants.accentColor
+                              : AppConstants.borderColor,
+                        ),
+                      ),
+                      child: Text(
+                        entry.value,
+                        style: TextStyle(
+                          color: isSelected
+                              ? Colors.white
+                              : AppConstants.accentColor.withOpacity(0.7),
+                          fontSize: 12,
+                          fontWeight: isSelected
+                              ? FontWeight.w700
+                              : FontWeight.w500,
+                        ),
+                      ),
+                    ),
+                  ),
+                );
+              }).toList(),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  static const Map<int, String> _blinkOptions = {
+    800: 'Lent',
+    500: 'Normal',
+    250: 'Rapide',
+  };
+
+  Widget _buildBlinkSpeedTile() {
+    final currentLabel =
+        _blinkOptions[_blinkIntervalMs] ?? '${_blinkIntervalMs}ms';
+
+    return Container(
+      decoration: BoxDecoration(
+        color: AppConstants.surfaceColor,
+        borderRadius: BorderRadius.circular(AppConstants.defaultRadius),
+        border: Border.all(color: AppConstants.borderColor),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        child: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: AppConstants.accentColor.withOpacity(0.08),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: const Icon(
+                Icons.visibility,
+                color: AppConstants.accentColor,
+                size: 22,
+              ),
+            ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'Vitesse de clignotement',
+                    style: TextStyle(
+                      color: AppConstants.accentColor,
+                      fontSize: 15,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    currentLabel,
+                    style: TextStyle(
+                      color: AppConstants.accentColor.withOpacity(0.5),
+                      fontSize: 13,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            Row(
+              mainAxisSize: MainAxisSize.min,
+              children: _blinkOptions.entries.map((entry) {
+                final isSelected = _blinkIntervalMs == entry.key;
+                return Padding(
+                  padding: const EdgeInsets.only(left: 6),
+                  child: GestureDetector(
+                    onTap: () => setState(() => _blinkIntervalMs = entry.key),
                     child: AnimatedContainer(
                       duration: const Duration(milliseconds: 150),
                       padding: const EdgeInsets.symmetric(

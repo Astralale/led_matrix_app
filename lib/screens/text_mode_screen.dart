@@ -40,7 +40,7 @@ class _TextModeScreenState extends State<TextModeScreen> {
   bool _blinkEnabled = false;
   bool _blinkVisible = true;
   List<List<int>>? _blinkSnapshot;
-  static const int _blinkIntervalMs = 500;
+  int _blinkIntervalMs = 500;
 
   String _emergencyMessage = 'HELP';
   int _brightness = 60;
@@ -140,34 +140,33 @@ class _TextModeScreenState extends State<TextModeScreen> {
   void _toggleScroll(bool value) {
     if (value) {
       setState(() => _scrollEnabled = true);
-      // Si du texte est saisi, lancer le scroll texte (même si texte trop long)
-      if (_textController.text.isNotEmpty) {
+      if (_matrix.litPixelCount > 0) {
+        // Des pixels sont allumés (dessin ou texte déjà appliqué) → scroller la matrice
+        _startDrawScroll();
+      } else if (_textController.text.isNotEmpty) {
+        // Matrice vide mais texte saisi → scroller le texte
         _stopScrolling();
         _scrollSnapshot = null;
         _currentText = _textController.text;
         _scrollOffset = AppConstants.matrixWidth;
         _startScrolling();
-      } else if (_matrix.litPixelCount > 0) {
-        // Sinon, scroller le dessin courant
-        _startDrawScroll();
       }
       // If blink was already active in static mode, switch it to scroll mode
       if (_blinkEnabled) {
         _blinkSnapshot = null;
         _blinkTimer?.cancel();
         _blinkVisible = true;
-        _blinkTimer = Timer.periodic(
-          const Duration(milliseconds: _blinkIntervalMs),
-          (_) {
-            setState(() {
-              _blinkVisible = !_blinkVisible;
-              if (!_blinkVisible) {
-                _matrix.clear();
-                _sendCurrentMatrix();
-              }
-            });
-          },
-        );
+        _blinkTimer = Timer.periodic(Duration(milliseconds: _blinkIntervalMs), (
+          _,
+        ) {
+          setState(() {
+            _blinkVisible = !_blinkVisible;
+            if (!_blinkVisible) {
+              _matrix.clear();
+              _sendCurrentMatrix();
+            }
+          });
+        });
       }
     } else {
       // Désactiver : restaurer le snapshot si dessin
@@ -185,22 +184,21 @@ class _TextModeScreenState extends State<TextModeScreen> {
         _blinkTimer?.cancel();
         _blinkVisible = true;
         _blinkSnapshot = _matrix.pixels.map((r) => List<int>.from(r)).toList();
-        _blinkTimer = Timer.periodic(
-          const Duration(milliseconds: _blinkIntervalMs),
-          (_) {
-            setState(() {
-              _blinkVisible = !_blinkVisible;
-              if (_blinkVisible) {
-                _matrix.updateFrom(
-                  _blinkSnapshot!.map((r) => List<int>.from(r)).toList(),
-                );
-              } else {
-                _matrix.clear();
-              }
-            });
-            _sendCurrentMatrix();
-          },
-        );
+        _blinkTimer = Timer.periodic(Duration(milliseconds: _blinkIntervalMs), (
+          _,
+        ) {
+          setState(() {
+            _blinkVisible = !_blinkVisible;
+            if (_blinkVisible) {
+              _matrix.updateFrom(
+                _blinkSnapshot!.map((r) => List<int>.from(r)).toList(),
+              );
+            } else {
+              _matrix.clear();
+            }
+          });
+          _sendCurrentMatrix();
+        });
       }
     }
   }
@@ -276,6 +274,7 @@ class _TextModeScreenState extends State<TextModeScreen> {
         builder: (context) => SettingsScreen(
           emergencyMessage: _emergencyMessage,
           scrollSpeedMs: _scrollSpeedMs,
+          blinkIntervalMs: _blinkIntervalMs,
           brightness: _brightness,
         ),
       ),
@@ -292,6 +291,13 @@ class _TextModeScreenState extends State<TextModeScreen> {
           _scrollSpeedMs = speed;
           if (_isScrolling) {
             _restartActiveScroll();
+          }
+        }
+        final blinkInterval = result['blinkIntervalMs'] as int?;
+        if (blinkInterval != null) {
+          _blinkIntervalMs = blinkInterval;
+          if (_blinkEnabled) {
+            _restartActiveBlink();
           }
         }
         final brightness = result['brightness'] as int?;
@@ -312,6 +318,41 @@ class _TextModeScreenState extends State<TextModeScreen> {
     }
   }
 
+  void _restartActiveBlink() {
+    _blinkTimer?.cancel();
+    _blinkVisible = true;
+    if (_isScrolling) {
+      _blinkTimer = Timer.periodic(Duration(milliseconds: _blinkIntervalMs), (
+        _,
+      ) {
+        setState(() {
+          _blinkVisible = !_blinkVisible;
+          if (!_blinkVisible) {
+            _matrix.clear();
+            _sendCurrentMatrix();
+          }
+        });
+      });
+    } else {
+      _blinkSnapshot = _matrix.pixels.map((r) => List<int>.from(r)).toList();
+      _blinkTimer = Timer.periodic(Duration(milliseconds: _blinkIntervalMs), (
+        _,
+      ) {
+        setState(() {
+          _blinkVisible = !_blinkVisible;
+          if (_blinkVisible) {
+            _matrix.updateFrom(
+              _blinkSnapshot!.map((r) => List<int>.from(r)).toList(),
+            );
+          } else {
+            _matrix.clear();
+          }
+        });
+        _sendCurrentMatrix();
+      });
+    }
+  }
+
   void _toggleBlink(bool value) {
     if (value) {
       _blinkVisible = true;
@@ -319,39 +360,37 @@ class _TextModeScreenState extends State<TextModeScreen> {
       _blinkTimer?.cancel();
       if (_isScrolling) {
         // While scrolling: blink by toggling visibility, scroll timer handles display
-        _blinkTimer = Timer.periodic(
-          const Duration(milliseconds: _blinkIntervalMs),
-          (_) {
-            setState(() {
-              _blinkVisible = !_blinkVisible;
-              if (!_blinkVisible) {
-                _matrix.clear();
-                _sendCurrentMatrix();
-              }
-              // When _blinkVisible becomes true again, the scroll timer
-              // will resume drawing on its next tick automatically
-            });
-          },
-        );
+        _blinkTimer = Timer.periodic(Duration(milliseconds: _blinkIntervalMs), (
+          _,
+        ) {
+          setState(() {
+            _blinkVisible = !_blinkVisible;
+            if (!_blinkVisible) {
+              _matrix.clear();
+              _sendCurrentMatrix();
+            }
+            // When _blinkVisible becomes true again, the scroll timer
+            // will resume drawing on its next tick automatically
+          });
+        });
       } else {
         // Static display: use snapshot approach
         _blinkSnapshot = _matrix.pixels.map((r) => List<int>.from(r)).toList();
-        _blinkTimer = Timer.periodic(
-          const Duration(milliseconds: _blinkIntervalMs),
-          (_) {
-            setState(() {
-              _blinkVisible = !_blinkVisible;
-              if (_blinkVisible) {
-                _matrix.updateFrom(
-                  _blinkSnapshot!.map((r) => List<int>.from(r)).toList(),
-                );
-              } else {
-                _matrix.clear();
-              }
-            });
-            _sendCurrentMatrix();
-          },
-        );
+        _blinkTimer = Timer.periodic(Duration(milliseconds: _blinkIntervalMs), (
+          _,
+        ) {
+          setState(() {
+            _blinkVisible = !_blinkVisible;
+            if (_blinkVisible) {
+              _matrix.updateFrom(
+                _blinkSnapshot!.map((r) => List<int>.from(r)).toList(),
+              );
+            } else {
+              _matrix.clear();
+            }
+          });
+          _sendCurrentMatrix();
+        });
       }
     } else {
       _stopBlinking();
