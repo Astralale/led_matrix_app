@@ -7,6 +7,7 @@ import '../services/text_renderer.dart';
 import '../widgets/matrix_preview.dart';
 import '../widgets/color_palette.dart';
 import 'draw_mode_screen.dart';
+import 'settings_screen.dart';
 import '../services/ble_service.dart';
 
 class TextModeScreen extends StatefulWidget {
@@ -37,6 +38,8 @@ class _TextModeScreenState extends State<TextModeScreen> {
   // BLE
   BleConnectionState _bleState = BleService.instance.currentState;
   StreamSubscription<BleConnectionState>? _bleSub;
+
+  String _emergencyMessage = 'HELP';
 
   @override
   void initState() {
@@ -194,9 +197,9 @@ class _TextModeScreenState extends State<TextModeScreen> {
 
   void _displayHelp() {
     _stopScrollingAndReset();
-    _textController.text = 'help';
-    const helpColor = 1; // Rouge
-    const text = 'HELP';
+    _textController.text = _emergencyMessage.toLowerCase();
+    const helpColor = 1;
+    final text = _emergencyMessage.toUpperCase();
     final centeredX =
         (AppConstants.matrixWidth - TextRenderer.getTextWidth(text)) ~/ 2;
     setState(() {
@@ -209,6 +212,22 @@ class _TextModeScreenState extends State<TextModeScreen> {
       );
     });
     _sendCurrentMatrix();
+  }
+
+  Future<void> _openSettings() async {
+    final result = await Navigator.push<String>(
+      context,
+      MaterialPageRoute(
+        builder: (context) =>
+            SettingsScreen(emergencyMessage: _emergencyMessage),
+      ),
+    );
+
+    if (result != null && result.isNotEmpty) {
+      setState(() {
+        _emergencyMessage = result.toUpperCase();
+      });
+    }
   }
 
   Future<void> _openDrawMode() async {
@@ -306,6 +325,23 @@ class _TextModeScreenState extends State<TextModeScreen> {
         ],
       ),
       actions: [
+        Padding(
+          padding: const EdgeInsets.only(right: 4),
+          child: ElevatedButton.icon(
+            onPressed: _openSettings,
+            icon: const Icon(Icons.settings, size: 16),
+            label: const Text('Paramètres', style: TextStyle(fontSize: 13)),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppConstants.borderColor,
+              foregroundColor: AppConstants.accentColor,
+              elevation: 0,
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(AppConstants.defaultRadius),
+              ),
+            ),
+          ),
+        ),
         Padding(
           padding: const EdgeInsets.only(right: 8),
           child: ElevatedButton.icon(
