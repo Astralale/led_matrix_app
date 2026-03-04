@@ -300,7 +300,6 @@ class BleService {
       return;
     }
 
-    // Differential send: skip if matrix unchanged
     if (_lastSentPixels != null) {
       bool changed = false;
       for (int y = 0; y < pixels.length && !changed; y++) {
@@ -311,7 +310,6 @@ class BleService {
       if (!changed) return;
     }
 
-    // Copy for differential cache
     final copy = pixels.map((r) => List<int>.from(r)).toList();
 
     await _enqueue(() async {
@@ -333,7 +331,10 @@ class BleService {
         final iosChunk = 180;
         final effectiveChunk = Platform.isAndroid ? _chunkSize : iosChunk;
         final end = (offset + effectiveChunk).clamp(0, frame.length);
-        await char.write(frame.sublist(offset, end), withoutResponse: Platform.isAndroid);
+        await char.write(
+          frame.sublist(offset, end),
+          withoutResponse: Platform.isAndroid,
+        );
         offset = end;
       }
 
