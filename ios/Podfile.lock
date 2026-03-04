@@ -14,6 +14,9 @@ PODS:
   - photo_manager (3.8.3):
     - Flutter
     - FlutterMacOS
+  - shared_preferences_foundation (0.0.1):
+    - Flutter
+    - FlutterMacOS
 
 DEPENDENCIES:
   - ffmpeg_kit_flutter_new (from `.symlinks/plugins/ffmpeg_kit_flutter_new/ios`)
@@ -21,6 +24,7 @@ DEPENDENCIES:
   - flutter_blue_plus_darwin (from `.symlinks/plugins/flutter_blue_plus_darwin/darwin`)
   - path_provider_foundation (from `.symlinks/plugins/path_provider_foundation/darwin`)
   - photo_manager (from `.symlinks/plugins/photo_manager/darwin`)
+  - shared_preferences_foundation (from `.symlinks/plugins/shared_preferences_foundation/darwin`)
 
 EXTERNAL SOURCES:
   ffmpeg_kit_flutter_new:
@@ -33,6 +37,8 @@ EXTERNAL SOURCES:
     :path: ".symlinks/plugins/path_provider_foundation/darwin"
   photo_manager:
     :path: ".symlinks/plugins/photo_manager/darwin"
+  shared_preferences_foundation:
+    :path: ".symlinks/plugins/shared_preferences_foundation/darwin"
 
 SPEC CHECKSUMS:
   ffmpeg_kit_flutter_new: 57e1119b327bb2e13a091e0d73576739fb9f22f5
@@ -40,6 +46,7 @@ SPEC CHECKSUMS:
   flutter_blue_plus_darwin: 904ed52825285a15f60e9d90312337a09f11a785
   path_provider_foundation: 0b743cbb62d8e47eab856f09262bb8c1ddcfe6ba
   photo_manager: 647b6f5c5057632e2d00e2921c6ce3437ded57a9
+  shared_preferences_foundation: 5086985c1d43c5ba4d5e69a4e8083a389e2909e6
 
 PODFILE CHECKSUM: d71a8f9d234bf288cee64b372c30c196c8075224
 

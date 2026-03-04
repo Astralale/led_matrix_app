@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:collection';
+import 'dart:io' show Platform;
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter_blue_plus/flutter_blue_plus.dart';
@@ -11,17 +12,15 @@ enum BleConnectionState { disconnected, scanning, connecting, connected, error }
 
 class BleService {
   BleService._();
+
   static final BleService instance = BleService._();
 
   static const String _serviceUuid = '4fafc201-1fb5-459e-8fcc-c5c9c331914b';
   static const String _charUuid = 'beb5483e-36e1-4688-b7f5-ea07361b26a8';
   static const String _deviceName = 'LED_MATRIX';
 
-  static const int _frameSize = 512; // 32 × 16 pixels
-  static const int _chunkSize = 128;
-  static const int _chunkDelay = 20;
-
-  /// Headers de trame
+  static const int _frameSize = 512;
+  static const int _chunkSize = 100;
   static const int _headerMatrix1 = 0xAA;
   static const int _headerMatrix2 = 0x55;
   static const int _headerBrightness1 = 0xBB;
@@ -38,6 +37,8 @@ class BleService {
   BluetoothDevice? _device;
   BluetoothCharacteristic? _characteristic;
   StreamSubscription? _connSub;
+  bool _connecting = false;
+  bool _reconnecting = false;
 
   List<List<int>>? _lastSentPixels;
 
@@ -75,8 +76,6 @@ class BleService {
       final completer = Completer<BluetoothDevice>();
       StreamSubscription? scanSub;
 
-      await FlutterBluePlus.startScan(timeout: const Duration(seconds: 12));
-
       scanSub = FlutterBluePlus.scanResults.listen((results) {
         for (final r in results) {
           if (r.device.platformName == _deviceName && !completer.isCompleted) {
@@ -84,6 +83,8 @@ class BleService {
           }
         }
       });
+
+      await FlutterBluePlus.startScan(timeout: const Duration(seconds: 12));
 
       final device = await completer.future.timeout(
         const Duration(seconds: 12),
@@ -105,21 +106,9 @@ class BleService {
   }
 
   Future<void> connectToDevice(BluetoothDevice device) async {
-    if (_state == BleConnectionState.connecting ||
-        _state == BleConnectionState.connected) {
-      return;
-    }
+    await FlutterBluePlus.stopScan();
     _userDisconnected = false;
-    _setState(BleConnectionState.connecting);
-    try {
-      await _doConnect(device);
-    } on Exception catch (_) {
-      _characteristic = null;
-      _device = null;
-      _setState(BleConnectionState.error);
-      NotificationService.showError('Connexion échouée');
-      rethrow;
-    }
+    await _doConnect(device);
   }
 
   Future<List<ScanResult>> scanForDevices({
@@ -142,103 +131,129 @@ class BleService {
   }
 
   Future<void> _doConnect(BluetoothDevice device) async {
-    _device = device;
-    _setState(BleConnectionState.connecting);
+    if (_connecting) return;
+    _connecting = true;
 
-    await device.connect(timeout: const Duration(seconds: 10));
-    await device.requestMtu(256);
+    try {
+      _device = device;
+      _setState(BleConnectionState.connecting);
 
-    final services = await device.discoverServices();
-    BluetoothCharacteristic? char;
+      if (Platform.isAndroid) {
+        try {
+          await device.disconnect();
+        } catch (_) {}
+      } else {
+        await Future<void>.delayed(const Duration(milliseconds: 500));
+      }
 
-    for (final svc in services) {
-      if (svc.uuid.toString().toLowerCase() == _serviceUuid) {
-        for (final c in svc.characteristics) {
-          if (c.uuid.toString().toLowerCase() == _charUuid) {
-            char = c;
-            break;
+      await device.connect(
+        autoConnect: false,
+        timeout: const Duration(seconds: 15),
+      );
+
+      await device.connectionState.firstWhere(
+        (s) => s == BluetoothConnectionState.connected,
+      );
+
+      // Android only
+      if (Platform.isAndroid) {
+        try {
+          await device.requestMtu(256);
+        } catch (_) {}
+      }
+      await Future<void>.delayed(
+        Platform.isAndroid
+            ? const Duration(milliseconds: 100)
+            : const Duration(milliseconds: 800),
+      );
+      final services = await device.discoverServices();
+
+      BluetoothCharacteristic? char;
+      for (final svc in services) {
+        if (svc.uuid.toString().toLowerCase() == _serviceUuid) {
+          for (final c in svc.characteristics) {
+            if (c.uuid.toString().toLowerCase() == _charUuid) {
+              char = c;
+              break;
+            }
           }
         }
       }
-    }
 
-    if (char == null) {
-      throw Exception('BLE characteristic "$_charUuid" not found');
-    }
-
-    _characteristic = char;
-    _reconnectAttempts = 0;
-    _lastSentPixels = null;
-    _setState(BleConnectionState.connected);
-
-    StorageService.instance.lastDeviceId = device.remoteId.toString();
-
-    NotificationService.showSuccess('LED panel connected');
-    _log('Connecté à ${device.platformName} (${device.remoteId})');
-
-    _connSub?.cancel();
-    _connSub = device.connectionState.listen((state) {
-      if (state == BluetoothConnectionState.disconnected) {
-        _characteristic = null;
-        _connSub?.cancel();
-        _lastSentPixels = null;
-
-        if (_userDisconnected) {
-          _device = null;
-          _setState(BleConnectionState.disconnected);
-        } else {
-          _setState(BleConnectionState.disconnected);
-          NotificationService.showWarning('Connexion BLE perdue');
-          _attemptReconnect();
-        }
+      if (char == null) {
+        throw Exception('BLE characteristic "$_charUuid" not found');
       }
-    });
+
+      _characteristic = char;
+      _reconnectAttempts = 0;
+      _lastSentPixels = null;
+      _setState(BleConnectionState.connected);
+
+      StorageService.instance.lastDeviceId = device.remoteId.toString();
+      NotificationService.showSuccess('LED panel connected');
+      _log('Connecté à ${device.platformName} (${device.remoteId})');
+
+      await _connSub?.cancel();
+      _connSub = device.connectionState.listen((state) {
+        if (state == BluetoothConnectionState.disconnected) {
+          _characteristic = null;
+          _lastSentPixels = null;
+
+          if (_userDisconnected) {
+            _device = null;
+            _setState(BleConnectionState.disconnected);
+          } else {
+            _setState(BleConnectionState.disconnected);
+            NotificationService.showWarning('Connexion BLE perdue');
+            _attemptReconnect(); // protégé par _reconnecting
+          }
+        }
+      });
+    } finally {
+      _connecting = false;
+    }
   }
 
   Future<void> _attemptReconnect() async {
-    final device = _device;
-    if (device == null || _userDisconnected) return;
-
-    if (_reconnectAttempts >= _maxReconnectAttempts) {
-      _log('Reconnection abandoned after $_maxReconnectAttempts attempts');
-      _device = null;
-      _setState(BleConnectionState.error);
-      NotificationService.showError(
-        'Reconnection failed after $_maxReconnectAttempts attempts',
-      );
-      return;
-    }
-
-    _reconnectAttempts++;
-    final delay = _baseReconnectDelay * _reconnectAttempts;
-    _log(
-      'Reconnection attempt $_reconnectAttempts/$_maxReconnectAttempts '
-      'in ${delay.inSeconds}s...',
-    );
-    NotificationService.showWarning(
-      'Reconnexion $_reconnectAttempts/$_maxReconnectAttempts...',
-    );
-
-    await Future<void>.delayed(delay);
-
-    if (_userDisconnected || isConnected) return;
+    if (_reconnecting) return;
+    _reconnecting = true;
 
     try {
-      _setState(BleConnectionState.connecting);
-      await _doConnect(device);
-    } catch (e) {
-      _log('Reconnection failed: $e');
-      // _doConnect sets error state; _attemptReconnect is called again
-      // from the connectionState listener if it disconnects.
-      if (_reconnectAttempts < _maxReconnectAttempts) {
-        _attemptReconnect();
-      } else {
+      final device = _device;
+      if (device == null || _userDisconnected) return;
+
+      while (!_userDisconnected &&
+          !isConnected &&
+          _reconnectAttempts < _maxReconnectAttempts) {
+        _reconnectAttempts++;
+        final delay = _baseReconnectDelay * _reconnectAttempts;
+
+        _log(
+          'Reconnection attempt $_reconnectAttempts/$_maxReconnectAttempts in ${delay.inSeconds}s...',
+        );
+        NotificationService.showWarning(
+          'Reconnexion $_reconnectAttempts/$_maxReconnectAttempts...',
+        );
+
+        await Future<void>.delayed(delay);
+        if (_userDisconnected || isConnected) return;
+
+        try {
+          await _doConnect(device);
+        } catch (e) {
+          _log('Reconnection failed: $e');
+        }
+      }
+
+      if (!isConnected && !_userDisconnected) {
         _device = null;
         _setState(BleConnectionState.error);
         NotificationService.showError(
           'Reconnection failed after $_maxReconnectAttempts attempts',
         );
       }
+    } finally {
+      _reconnecting = false;
     }
   }
 
@@ -315,9 +330,10 @@ class BleService {
 
       int offset = 0;
       while (offset < frame.length) {
-        final end = (offset + _chunkSize).clamp(0, frame.length);
-        await char.write(frame.sublist(offset, end), withoutResponse: true);
-        await Future<void>.delayed(const Duration(milliseconds: _chunkDelay));
+        final iosChunk = 180;
+        final effectiveChunk = Platform.isAndroid ? _chunkSize : iosChunk;
+        final end = (offset + effectiveChunk).clamp(0, frame.length);
+        await char.write(frame.sublist(offset, end), withoutResponse: Platform.isAndroid);
         offset = end;
       }
 
@@ -336,7 +352,7 @@ class BleService {
       frame[0] = _headerBrightness1;
       frame[1] = _headerBrightness2;
       frame[2] = brightness.clamp(0, 255);
-      await char.write(frame.toList(), withoutResponse: true);
+      await char.write(frame.toList(), withoutResponse: false);
       _log('Brightness sent: $brightness');
     });
   }

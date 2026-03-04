@@ -95,23 +95,40 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   Future<void> _startScan() async {
     if (_isScanning) return;
+    final s = await FlutterBluePlus.adapterState.firstWhere(
+      (s) =>
+          s == BluetoothAdapterState.on ||
+          s == BluetoothAdapterState.off ||
+          s == BluetoothAdapterState.unauthorized,
+    );
+
+    if (s != BluetoothAdapterState.on) {
+      NotificationService.showError(
+        s == BluetoothAdapterState.unauthorized
+            ? "Bluetooth non autorisé (Réglages > Confidentialité > Bluetooth)."
+            : "Bluetooth désactivé.",
+      );
+      return;
+    }
+
     setState(() {
       _isScanning = true;
       _foundDevices = [];
     });
 
-    await FlutterBluePlus.startScan(timeout: const Duration(seconds: 10));
-
     await _scanSub?.cancel();
     _scanSub = FlutterBluePlus.scanResults.listen((results) {
       final map = <String, ScanResult>{};
       for (final r in results) {
-        if (r.device.platformName.isNotEmpty) {
+        final name = r.device.platformName;
+        if (name.isNotEmpty) {
           map[r.device.remoteId.toString()] = r;
         }
       }
       if (mounted) setState(() => _foundDevices = map.values.toList());
     });
+
+    await FlutterBluePlus.startScan(timeout: const Duration(seconds: 10));
 
     FlutterBluePlus.isScanning.where((v) => v == false).first.then((_) {
       _scanSub?.cancel();
@@ -126,7 +143,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
       _isScanning = false;
       _foundDevices = [];
     });
-    BleService.instance.connectToDevice(device).catchError((_) {});
+    try {
+      await BleService.instance.connectToDevice(device);
+      NotificationService.showSuccess("Connecté !");
+    } catch (e) {
+      debugPrint("BLE connect error: $e");
+      NotificationService.showError("Erreur BLE: $e");
+    }
   }
 
   Future<void> _editEmergencyMessage() async {

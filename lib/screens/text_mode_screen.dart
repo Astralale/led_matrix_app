@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:led_matrix_app/models/matrix_template.dart';
+import 'package:led_matrix_app/screens/templates_screen.dart';
 
 import '../config/constants.dart';
 import '../services/text_mode_controller.dart';
@@ -46,6 +48,22 @@ class _TextModeScreenState extends State<TextModeScreen> {
   void _displayHelp() {
     _textController.text = _controller.emergencyMessage.toLowerCase();
     _controller.displayHelp();
+  }
+
+  Future<void> _openTemplatesScreen() async {
+    _controller.toggleScroll(false);
+    _controller.toggleBlink(false);
+
+    final selected = await Navigator.push<MatrixTemplate>(
+      context,
+      MaterialPageRoute(builder: (_) => const TemplatesScreen()),
+    );
+
+    if (selected != null) {
+      _controller.updateFromDrawResult(
+        selected.matrix.map((row) => List<int>.from(row)).toList(),
+      );
+    }
   }
 
   Future<void> _openDrawMode() async {
@@ -302,6 +320,22 @@ class _TextModeScreenState extends State<TextModeScreen> {
                 ),
               ),
               child: const Icon(Icons.brush, size: 20),
+            ),
+            const SizedBox(width: 8),
+            ElevatedButton(
+              onPressed: _openTemplatesScreen,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppConstants.borderColor,
+                foregroundColor: AppConstants.accentColor,
+                elevation: 0,
+                padding: const EdgeInsets.symmetric(horizontal: 14),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(
+                    AppConstants.defaultRadius,
+                  ),
+                ),
+              ),
+              child: const Icon(Icons.image, size: 20),
             ),
           ],
         ),
