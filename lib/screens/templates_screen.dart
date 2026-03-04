@@ -4,15 +4,58 @@ import '../config/constants.dart';
 import '../data/matrix_templates.dart';
 import '../models/led_matrix.dart';
 import '../models/matrix_template.dart';
+import '../services/storage_service.dart';
 import '../widgets/ble_status_indicator.dart';
 import '../widgets/matrix_panel.dart';
 import '../widgets/matrix_preview.dart';
 
-class TemplatesScreen extends StatelessWidget {
+class TemplatesScreen extends StatefulWidget {
   const TemplatesScreen({super.key});
 
   @override
+  State<TemplatesScreen> createState() => _TemplatesScreenState();
+}
+
+class _TemplatesScreenState extends State<TemplatesScreen> {
+  List<Map<String, dynamic>> _savedDesigns = [];
+
+  @override
+  void initState() {
+    super.initState();
+    _loadSavedDesigns();
+  }
+
+  void _loadSavedDesigns() {
+    setState(() {
+      _savedDesigns = StorageService.instance.savedDesigns;
+    });
+  }
+
+  void _deleteDesign(int index) {
+    StorageService.instance.deleteDesign(index);
+    _loadSavedDesigns();
+  }
+
+  MatrixTemplate _savedDesignToTemplate(int index, Map<String, dynamic> d) {
+    final rawPixels = d['pixels'] as List;
+    final pixels = rawPixels
+        .map((row) => (row as List).map((v) => v as int).toList())
+        .toList();
+    return MatrixTemplate(
+      id: 'saved_$index',
+      name: d['name'] as String,
+      matrix: normalize32x16(pixels),
+    );
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final savedTemplates = List.generate(
+      _savedDesigns.length,
+      (i) => _savedDesignToTemplate(i, _savedDesigns[i]),
+    );
+    final allTemplates = [...savedTemplates, ...kMatrixTemplates];
+
     return Scaffold(
       backgroundColor: AppConstants.backgroundColor,
       appBar: AppBar(
@@ -23,34 +66,14 @@ class TemplatesScreen extends StatelessWidget {
           preferredSize: const Size.fromHeight(1),
           child: Container(height: 1, color: AppConstants.borderColor),
         ),
-        title: Row(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(7),
-              decoration: BoxDecoration(
-                color: AppConstants.accentColor.withValues(alpha: 0.08),
-                borderRadius: BorderRadius.circular(8),
-                border: Border.all(
-                  color: AppConstants.accentColor.withValues(alpha: 0.2),
-                ),
-              ),
-              child: const Icon(
-                Icons.auto_awesome_mosaic,
-                color: AppConstants.accentColor,
-                size: 20,
-              ),
-            ),
-            const SizedBox(width: 12),
-            const Text(
-              'Templates',
-              style: TextStyle(
-                fontWeight: FontWeight.bold,
-                fontSize: 18,
-                color: AppConstants.accentColor,
-                letterSpacing: 0.5,
-              ),
-            ),
-          ],
+        title: const Text(
+          'Templates',
+          style: TextStyle(
+            fontWeight: FontWeight.bold,
+            fontSize: 18,
+            color: AppConstants.accentColor,
+            letterSpacing: 0.5,
+          ),
         ),
         actions: const [
           Padding(
@@ -59,25 +82,35 @@ class TemplatesScreen extends StatelessWidget {
           ),
         ],
       ),
-      body: Padding(
-        padding: const EdgeInsets.all(AppConstants.defaultPadding),
-        child: GridView.builder(
-          itemCount: kMatrixTemplates.length,
-          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: 2,
-            mainAxisSpacing: 12,
-            crossAxisSpacing: 12,
-            childAspectRatio: 0.92,
-          ),
-          itemBuilder: (context, index) {
-            final t = kMatrixTemplates[index];
-            return _TemplateCard(
-              template: t,
-              onTap: () => Navigator.pop(context, t),
-            );
-          },
-        ),
-      ),
+      body: allTemplates.isEmpty
+          ? const Center(
+              child: Text(
+                'Aucun template disponible',
+                style: TextStyle(color: AppConstants.secondaryAccent),
+              ),
+            )
+          : Padding(
+              padding: const EdgeInsets.all(AppConstants.defaultPadding),
+              child: GridView.builder(
+                itemCount: allTemplates.length,
+                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount: 2,
+                  mainAxisSpacing: 12,
+                  crossAxisSpacing: 12,
+                  childAspectRatio: 0.92,
+                ),
+                itemBuilder: (context, index) {
+                  final t = allTemplates[index];
+                  final isSaved = index < savedTemplates.length;
+                  return _TemplateCard(
+                    template: t,
+                    canDelete: isSaved,
+                    onTap: () => Navigator.pop(context, t),
+                    onDelete: isSaved ? () => _deleteDesign(index) : null,
+                  );
+                },
+              ),
+            ),
     );
   }
 }
@@ -85,8 +118,15 @@ class TemplatesScreen extends StatelessWidget {
 class _TemplateCard extends StatelessWidget {
   final MatrixTemplate template;
   final VoidCallback onTap;
+  final bool canDelete;
+  final VoidCallback? onDelete;
 
-  const _TemplateCard({required this.template, required this.onTap});
+  const _TemplateCard({
+    required this.template,
+    required this.onTap,
+    this.canDelete = false,
+    this.onDelete,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -113,16 +153,31 @@ class _TemplateCard extends StatelessWidget {
                   bottom: BorderSide(color: AppConstants.borderColor),
                 ),
               ),
-              child: Text(
-                template.name,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: const TextStyle(
-                  color: AppConstants.accentColor,
-                  fontWeight: FontWeight.w800,
-                  fontSize: 13,
-                  letterSpacing: 0.2,
-                ),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      template.name,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        color: AppConstants.accentColor,
+                        fontWeight: FontWeight.w800,
+                        fontSize: 13,
+                        letterSpacing: 0.2,
+                      ),
+                    ),
+                  ),
+                  if (canDelete)
+                    GestureDetector(
+                      onTap: onDelete,
+                      child: const Icon(
+                        Icons.delete_outline,
+                        size: 16,
+                        color: AppConstants.dangerColor,
+                      ),
+                    ),
+                ],
               ),
             ),
             Expanded(

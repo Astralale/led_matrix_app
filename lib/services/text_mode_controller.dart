@@ -92,9 +92,16 @@ class TextModeController extends ChangeNotifier with WidgetsBindingObserver {
     BleService.instance.sendMatrix(matrix.pixels);
   }
 
+  bool get _hasDrawing =>
+      matrix.pixels.any((row) => row.any((pixel) => pixel != 0));
+
   void applyText(String text) {
     if (text.isEmpty) {
-      NotificationService.showInfo('Entrez du texte à afficher');
+      if (_hasDrawing) {
+        sendCurrentMatrix();
+      } else {
+        NotificationService.showInfo('Entrez du texte à afficher');
+      }
       return;
     }
 

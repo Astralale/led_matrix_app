@@ -39,6 +39,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   StreamSubscription<List<ScanResult>>? _scanSub;
   bool _isScanning = false;
   List<ScanResult> _foundDevices = [];
+  List<BluetoothDevice> _systemDevices = [];
 
   final _cam = Esp32CamService.instance;
   int _camFramesize = 6;
@@ -83,6 +84,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
     _bleSub = BleService.instance.stateStream.listen(
       (state) => setState(() => _bleState = state),
     );
+    _loadSystemDevices();
+  }
+
+  Future<void> _loadSystemDevices() async {
+    final devices = await FlutterBluePlus.systemDevices(const []);
+    if (mounted) setState(() => _systemDevices = devices);
   }
 
   @override
@@ -95,45 +102,43 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   Future<void> _startScan() async {
     if (_isScanning) return;
-    final s = await FlutterBluePlus.adapterState.firstWhere(
-      (s) =>
-          s == BluetoothAdapterState.on ||
-          s == BluetoothAdapterState.off ||
-          s == BluetoothAdapterState.unauthorized,
-    );
-
-    if (s != BluetoothAdapterState.on) {
-      NotificationService.showError(
-        s == BluetoothAdapterState.unauthorized
-            ? "Bluetooth non autorisé (Réglages > Confidentialité > Bluetooth)."
-            : "Bluetooth désactivé.",
-      );
-      return;
-    }
 
     setState(() {
       _isScanning = true;
       _foundDevices = [];
     });
-
+    _loadSystemDevices();
     await _scanSub?.cancel();
     _scanSub = FlutterBluePlus.scanResults.listen((results) {
       final map = <String, ScanResult>{};
       for (final r in results) {
-        final name = r.device.platformName;
-        if (name.isNotEmpty) {
+        if (r.device.platformName.isNotEmpty) {
           map[r.device.remoteId.toString()] = r;
         }
       }
       if (mounted) setState(() => _foundDevices = map.values.toList());
     });
 
-    await FlutterBluePlus.startScan(timeout: const Duration(seconds: 10));
+    try {
+      await FlutterBluePlus.startScan(timeout: const Duration(seconds: 20));
+    } catch (e) {
+      await _scanSub?.cancel();
+      if (mounted) {
+        setState(() => _isScanning = false);
+        NotificationService.showError('Scan impossible : $e');
+      }
+      return;
+    }
 
-    FlutterBluePlus.isScanning.where((v) => v == false).first.then((_) {
-      _scanSub?.cancel();
-      if (mounted) setState(() => _isScanning = false);
-    });
+    // Skip the initial false emission and wait for the scan to actually stop.
+    FlutterBluePlus.isScanning
+        .skipWhile((v) => v == false)
+        .where((v) => v == false)
+        .first
+        .then((_) {
+          _scanSub?.cancel();
+          if (mounted) setState(() => _isScanning = false);
+        });
   }
 
   Future<void> _connectToDevice(BluetoothDevice device) async {
@@ -240,7 +245,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
           _buildSectionHeader('Connexion'),
           const SizedBox(height: 8),
           _buildBluetoothTile(),
-          if (_foundDevices.isNotEmpty || _isScanning) ...[
+          if (_foundDevices.isNotEmpty ||
+              _isScanning ||
+              _systemDevices.isNotEmpty) ...[
             const SizedBox(height: 8),
             _buildDeviceList(),
           ],
@@ -1058,6 +1065,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   Widget _buildDeviceList() {
+    final systemIds = _systemDevices.map((d) => d.remoteId.toString()).toSet();
+    final scannedOnly = _foundDevices
+        .where((r) => !systemIds.contains(r.device.remoteId.toString()))
+        .toList();
+
+    final showSystem = _systemDevices.isNotEmpty;
+    final showScanned = _isScanning || scannedOnly.isNotEmpty;
+
     return Container(
       margin: const EdgeInsets.only(bottom: 8),
       decoration: BoxDecoration(
@@ -1068,51 +1083,25 @@ class _SettingsScreenState extends State<SettingsScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
-            child: Row(
-              children: [
-                if (_isScanning) ...[
-                  SizedBox(
-                    width: 12,
-                    height: 12,
-                    child: CircularProgressIndicator(
-                      strokeWidth: 1.8,
-                      color: AppConstants.accentColor,
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                ],
-                Text(
-                  _isScanning ? 'Recherche en cours...' : 'Appareils trouvés',
-                  style: TextStyle(
-                    color: AppConstants.accentColor.withValues(alpha: 0.6),
-                    fontSize: 12,
-                    fontWeight: FontWeight.w700,
-                    letterSpacing: 0.8,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          if (_foundDevices.isEmpty)
+          if (showSystem) ...[
             Padding(
-              padding: const EdgeInsets.fromLTRB(16, 0, 16, 14),
+              padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
               child: Text(
-                'Aucun appareil détecté pour l\'instant...',
+                'Connectés au système',
                 style: TextStyle(
-                  color: AppConstants.accentColor.withValues(alpha: 0.35),
-                  fontSize: 13,
+                  color: AppConstants.successColor.withValues(alpha: 0.8),
+                  fontSize: 12,
+                  fontWeight: FontWeight.w700,
+                  letterSpacing: 0.8,
                 ),
               ),
-            )
-          else
-            ...List.generate(_foundDevices.length, (i) {
-              final r = _foundDevices[i];
-              final name = r.device.platformName.isNotEmpty
-                  ? r.device.platformName
-                  : r.device.remoteId.toString();
-              final isLast = i == _foundDevices.length - 1;
+            ),
+            ...List.generate(_systemDevices.length, (i) {
+              final device = _systemDevices[i];
+              final name = device.platformName.isNotEmpty
+                  ? device.platformName
+                  : device.remoteId.toString();
+              final isLast = i == _systemDevices.length - 1 && !showScanned;
               return Column(
                 children: [
                   ListTile(
@@ -1120,12 +1109,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     leading: Container(
                       padding: const EdgeInsets.all(6),
                       decoration: BoxDecoration(
-                        color: AppConstants.accentColor.withValues(alpha: 0.07),
+                        color: AppConstants.successColor.withValues(
+                          alpha: 0.10,
+                        ),
                         borderRadius: BorderRadius.circular(6),
                       ),
-                      child: const Icon(
-                        Icons.bluetooth,
-                        color: AppConstants.accentColor,
+                      child: Icon(
+                        Icons.bluetooth_connected,
+                        color: AppConstants.successColor,
                         size: 18,
                       ),
                     ),
@@ -1138,7 +1129,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       ),
                     ),
                     subtitle: Text(
-                      '${r.device.remoteId}  ·  ${r.rssi} dBm',
+                      device.remoteId.toString(),
                       style: TextStyle(
                         color: AppConstants.accentColor.withValues(alpha: 0.4),
                         fontSize: 11,
@@ -1149,7 +1140,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       size: 13,
                       color: AppConstants.accentColor,
                     ),
-                    onTap: () => _connectToDevice(r.device),
+                    onTap: () => _connectToDevice(device),
                   ),
                   if (!isLast)
                     Divider(
@@ -1161,6 +1152,108 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 ],
               );
             }),
+            if (showScanned)
+              Divider(height: 1, color: AppConstants.borderColor),
+          ],
+          if (showScanned) ...[
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
+              child: Row(
+                children: [
+                  if (_isScanning) ...[
+                    SizedBox(
+                      width: 12,
+                      height: 12,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 1.8,
+                        color: AppConstants.accentColor,
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                  ],
+                  Text(
+                    _isScanning ? 'Recherche en cours...' : 'Appareils trouvés',
+                    style: TextStyle(
+                      color: AppConstants.accentColor.withValues(alpha: 0.6),
+                      fontSize: 12,
+                      fontWeight: FontWeight.w700,
+                      letterSpacing: 0.8,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            if (scannedOnly.isEmpty)
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 0, 16, 14),
+                child: Text(
+                  'Aucun appareil détecté pour l\'instant...',
+                  style: TextStyle(
+                    color: AppConstants.accentColor.withValues(alpha: 0.35),
+                    fontSize: 13,
+                  ),
+                ),
+              )
+            else
+              ...List.generate(scannedOnly.length, (i) {
+                final r = scannedOnly[i];
+                final name = r.device.platformName.isNotEmpty
+                    ? r.device.platformName
+                    : r.device.remoteId.toString();
+                final isLast = i == scannedOnly.length - 1;
+                return Column(
+                  children: [
+                    ListTile(
+                      dense: true,
+                      leading: Container(
+                        padding: const EdgeInsets.all(6),
+                        decoration: BoxDecoration(
+                          color: AppConstants.accentColor.withValues(
+                            alpha: 0.07,
+                          ),
+                          borderRadius: BorderRadius.circular(6),
+                        ),
+                        child: const Icon(
+                          Icons.bluetooth,
+                          color: AppConstants.accentColor,
+                          size: 18,
+                        ),
+                      ),
+                      title: Text(
+                        name,
+                        style: const TextStyle(
+                          color: AppConstants.accentColor,
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      subtitle: Text(
+                        '${r.device.remoteId}  ·  ${r.rssi} dBm',
+                        style: TextStyle(
+                          color: AppConstants.accentColor.withValues(
+                            alpha: 0.4,
+                          ),
+                          fontSize: 11,
+                        ),
+                      ),
+                      trailing: const Icon(
+                        Icons.arrow_forward_ios,
+                        size: 13,
+                        color: AppConstants.accentColor,
+                      ),
+                      onTap: () => _connectToDevice(r.device),
+                    ),
+                    if (!isLast)
+                      Divider(
+                        height: 1,
+                        indent: 16,
+                        endIndent: 16,
+                        color: AppConstants.borderColor,
+                      ),
+                  ],
+                );
+              }),
+          ],
         ],
       ),
     );

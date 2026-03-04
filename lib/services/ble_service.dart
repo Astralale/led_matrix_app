@@ -41,6 +41,7 @@ class BleService {
   bool _reconnecting = false;
 
   List<List<int>>? _lastSentPixels;
+  List<List<int>>? _nextMatrix;
 
   final StreamController<BleConnectionState> _stateCtrl =
       StreamController<BleConnectionState>.broadcast();
@@ -198,6 +199,7 @@ class BleService {
         if (state == BluetoothConnectionState.disconnected) {
           _characteristic = null;
           _lastSentPixels = null;
+          _nextMatrix = null;
 
           if (_userDisconnected) {
             _device = null;
@@ -262,6 +264,7 @@ class BleService {
     _connSub?.cancel();
     _connSub = null;
     _lastSentPixels = null;
+    _nextMatrix = null;
     await _device?.disconnect();
     _characteristic = null;
     _device = null;
@@ -310,36 +313,46 @@ class BleService {
       if (!changed) return;
     }
 
-    final copy = pixels.map((r) => List<int>.from(r)).toList();
+    _nextMatrix = pixels.map((r) => List<int>.from(r)).toList();
+
+    if (_processing) return;
 
     await _enqueue(() async {
-      final char = _characteristic;
-      if (char == null) return;
-
-      final frame = Uint8List(_frameSize + 2);
-      frame[0] = _headerMatrix1;
-      frame[1] = _headerMatrix2;
-
-      for (int y = 0; y < copy.length && y < 16; y++) {
-        for (int x = 0; x < copy[y].length && x < 32; x++) {
-          frame[2 + y * 32 + x] = copy[y][x];
-        }
+      while (_nextMatrix != null) {
+        final toSend = _nextMatrix!;
+        _nextMatrix = null;
+        await _doMatrixWrite(toSend);
       }
-
-      int offset = 0;
-      while (offset < frame.length) {
-        final iosChunk = 180;
-        final effectiveChunk = Platform.isAndroid ? _chunkSize : iosChunk;
-        final end = (offset + effectiveChunk).clamp(0, frame.length);
-        await char.write(
-          frame.sublist(offset, end),
-          withoutResponse: Platform.isAndroid,
-        );
-        offset = end;
-      }
-
-      _lastSentPixels = copy;
     });
+  }
+
+  Future<void> _doMatrixWrite(List<List<int>> copy) async {
+    final char = _characteristic;
+    if (char == null) return;
+
+    final frame = Uint8List(_frameSize + 2);
+    frame[0] = _headerMatrix1;
+    frame[1] = _headerMatrix2;
+
+    for (int y = 0; y < copy.length && y < 16; y++) {
+      for (int x = 0; x < copy[y].length && x < 32; x++) {
+        frame[2 + y * 32 + x] = copy[y][x];
+      }
+    }
+
+    int offset = 0;
+    while (offset < frame.length) {
+      final iosChunk = 180;
+      final effectiveChunk = Platform.isAndroid ? _chunkSize : iosChunk;
+      final end = (offset + effectiveChunk).clamp(0, frame.length);
+      await char.write(
+        frame.sublist(offset, end),
+        withoutResponse: Platform.isAndroid,
+      );
+      offset = end;
+    }
+
+    _lastSentPixels = copy;
   }
 
   Future<void> sendBrightness(int brightness) async {

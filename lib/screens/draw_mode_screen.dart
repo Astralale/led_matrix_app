@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../config/constants.dart';
 import '../models/led_matrix.dart';
+import '../services/storage_service.dart';
 import '../widgets/matrix_panel.dart';
 import '../widgets/matrix_preview.dart';
 import '../widgets/color_palette.dart';
@@ -42,6 +43,72 @@ class _DrawModeScreenState extends State<DrawModeScreen> {
 
   void _saveAndGoBack() {
     Navigator.pop(context, _matrix.pixels);
+  }
+
+  Future<void> _saveAsTemplate() async {
+    final nameController = TextEditingController();
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: AppConstants.surfaceColor,
+        title: const Text(
+          'Sauvegarder le dessin',
+          style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+        ),
+        content: TextField(
+          controller: nameController,
+          autofocus: true,
+          decoration: const InputDecoration(
+            labelText: 'Nom du template',
+            border: OutlineInputBorder(),
+          ),
+          textCapitalization: TextCapitalization.sentences,
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Annuler'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Sauvegarder'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed == true) {
+      final name = nameController.text.trim();
+      if (name.isNotEmpty) {
+        StorageService.instance.saveDesign(name, _matrix.pixels);
+        if (mounted) {
+          ScaffoldMessenger.of(context)
+            ..clearSnackBars()
+            ..showSnackBar(
+              SnackBar(
+                content: Row(
+                  children: [
+                    const Icon(Icons.check_circle, color: Colors.white),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Text(
+                        '«$name» sauvegardé dans les templates',
+                        style: const TextStyle(fontWeight: FontWeight.w500),
+                      ),
+                    ),
+                  ],
+                ),
+                backgroundColor: Colors.green.shade700,
+                behavior: SnackBarBehavior.floating,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                duration: const Duration(seconds: 3),
+              ),
+            );
+        }
+      }
+    }
+    nameController.dispose();
   }
 
   @override
@@ -108,6 +175,8 @@ class _DrawModeScreenState extends State<DrawModeScreen> {
                 children: [
                   const SizedBox(height: 4),
                   _buildSaveButton(),
+                  const SizedBox(height: 6),
+                  _buildSaveAsTemplateButton(),
                   const SizedBox(height: 8),
                   _buildDivider(),
                   const SizedBox(height: 4),
@@ -131,6 +200,37 @@ class _DrawModeScreenState extends State<DrawModeScreen> {
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildSaveAsTemplateButton() {
+    return SizedBox(
+      width: double.infinity,
+      height: 36,
+      child: OutlinedButton(
+        onPressed: _saveAsTemplate,
+        style: OutlinedButton.styleFrom(
+          padding: const EdgeInsets.symmetric(horizontal: 6),
+          side: BorderSide(
+            color: AppConstants.accentColor.withValues(alpha: 0.5),
+          ),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(AppConstants.smallRadius),
+          ),
+        ),
+        child: const Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(Icons.bookmark_add_outlined, size: 14),
+            SizedBox(width: 4),
+            Text(
+              'Template',
+              style: TextStyle(fontSize: 10, fontWeight: FontWeight.w600),
+            ),
+          ],
+        ),
       ),
     );
   }

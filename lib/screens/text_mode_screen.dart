@@ -388,7 +388,7 @@ class _TextModeScreenState extends State<TextModeScreen> {
                 onPressed: _applyText,
                 icon: const Icon(Icons.check_rounded, size: 18),
                 label: const Text(
-                  'Appliquer',
+                  'Appliquer le texte',
                   style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
                 ),
                 style: ElevatedButton.styleFrom(
@@ -411,7 +411,10 @@ class _TextModeScreenState extends State<TextModeScreen> {
               child: OutlinedButton.icon(
                 onPressed: _controller.clearMatrix,
                 icon: const Icon(Icons.delete_outline, size: 18),
-                label: const Text('Effacer', style: TextStyle(fontSize: 14)),
+                label: const Text(
+                  'Effacer le texte ',
+                  style: TextStyle(fontSize: 14),
+                ),
                 style: OutlinedButton.styleFrom(
                   foregroundColor: AppConstants.accentColor.withValues(
                     alpha: 0.7,
