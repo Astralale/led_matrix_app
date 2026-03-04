@@ -194,7 +194,6 @@ void setup() {
     pAdvertising->setMinPreferred(0x06);
     pAdvertising->setMinPreferred(0x12);
     BLEDevice::startAdvertising();
-
     Serial.println("LED_MATRIX BLE Ready!");
     Serial.println("En attente de connexion...");
 }

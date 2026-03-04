@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:shared_preferences/shared_preferences.dart';
+import '../models/emergency_contact.dart';
 
 class StorageService {
   StorageService._();
@@ -13,13 +14,17 @@ class StorageService {
   static const String _keySelectedColorIndex = 'selected_color_index';
   static const String _keyLastDeviceId = 'last_ble_device_id';
   static const String _keySavedDesigns = 'saved_designs';
+  static const String _keyEmergencyContacts = 'emergency_contacts';  // NOUVEAU
 
   late SharedPreferences _prefs;
 
-  /// Must be called once before using any getter/setter.
   Future<void> init() async {
     _prefs = await SharedPreferences.getInstance();
   }
+
+  // ============================================================================
+  // Paramètres existants
+  // ============================================================================
 
   String get emergencyMessage =>
       _prefs.getString(_keyEmergencyMessage) ?? 'HELP';
@@ -75,6 +80,48 @@ class StorageService {
     if (index >= 0 && index < designs.length) {
       designs.removeAt(index);
       _prefs.setString(_keySavedDesigns, jsonEncode(designs));
+    }
+  }
+
+  // ============================================================================
+  // NOUVEAU : Contacts d'urgence
+  // ============================================================================
+
+  List<EmergencyContact> get emergencyContacts {
+    final json = _prefs.getString(_keyEmergencyContacts);
+    if (json == null || json.isEmpty) return [];
+
+    List<dynamic> jsonList = jsonDecode(json);
+    return jsonList
+        .map((item) => EmergencyContact.fromJson(item))
+        .toList();
+  }
+
+  set emergencyContacts(List<EmergencyContact> contacts) {
+    List<Map<String, dynamic>> jsonList = contacts
+        .map((contact) => contact.toJson())
+        .toList();
+    _prefs.setString(_keyEmergencyContacts, jsonEncode(jsonList));
+  }
+
+  void addEmergencyContact(EmergencyContact contact) {
+    final contacts = emergencyContacts;
+    contacts.add(contact);
+    emergencyContacts = contacts;
+  }
+
+  void removeEmergencyContact(String id) {
+    final contacts = emergencyContacts;
+    contacts.removeWhere((contact) => contact.id == id);
+    emergencyContacts = contacts;
+  }
+
+  void updateEmergencyContact(EmergencyContact updated) {
+    final contacts = emergencyContacts;
+    final index = contacts.indexWhere((c) => c.id == updated.id);
+    if (index != -1) {
+      contacts[index] = updated;
+      emergencyContacts = contacts;
     }
   }
 }

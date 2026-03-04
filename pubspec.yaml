@@ -51,6 +51,21 @@ dev_dependencies:
   # rules and activating additional ones.
   flutter_lints: ^5.0.0
 
+  telephony: ^0.2.0
+
+  # SMS
+  url_launcher: ^6.2.5
+
+  # GPS
+  geolocator: ^10.1.0
+
+  # Stockage local
+  shared_preferences: ^2.2.2
+
+  # Permissions
+  permission_handler: ^11.1.0
+
+
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec
 

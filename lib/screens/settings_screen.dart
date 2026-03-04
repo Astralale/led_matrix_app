@@ -4,9 +4,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_blue_plus/flutter_blue_plus.dart';
 
 import '../config/constants.dart';
+import '../models/emergency_contact.dart';
 import '../services/ble_service.dart';
 import '../services/esp32_cam_service.dart';
 import '../services/notification_service.dart';
+import '../services/sms_service.dart';
 import '../services/storage_service.dart';
 import '../widgets/app_card.dart';
 import '../widgets/ble_status_indicator.dart';
@@ -33,6 +35,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
   late int _scrollSpeedMs;
   late int _blinkIntervalMs;
   late int _brightness;
+
+  List<EmergencyContact> _emergencyContacts = [];
 
   BleConnectionState _bleState = BleService.instance.currentState;
   StreamSubscription<BleConnectionState>? _bleSub;
@@ -81,6 +85,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     _scrollSpeedMs = storage.scrollSpeedMs;
     _blinkIntervalMs = storage.blinkIntervalMs;
     _brightness = storage.brightness;
+    _emergencyContacts = storage.emergencyContacts;
     _bleSub = BleService.instance.stateStream.listen(
       (state) => setState(() => _bleState = state),
     );
@@ -100,6 +105,84 @@ class _SettingsScreenState extends State<SettingsScreen> {
     super.dispose();
   }
 
+  Future<void> _addEmergencyContact() async {
+    final result = await showDialog<EmergencyContact>(
+      context: context,
+      builder: (context) => _AddContactDialog(),
+    );
+
+    if (result != null) {
+      StorageService.instance.addEmergencyContact(result);
+      setState(() {
+        _emergencyContacts = StorageService.instance.emergencyContacts;
+      });
+    }
+  }
+
+  Future<void> _removeEmergencyContact(EmergencyContact contact) async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: AppConstants.surfaceColor,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(AppConstants.defaultRadius),
+        ),
+        title: const Text(
+          'Supprimer le contact',
+          style: TextStyle(
+            color: AppConstants.accentColor,
+            fontSize: 16,
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+        content: Text(
+          'Supprimer ${contact.name} des contacts d\'urgence ?',
+          style: TextStyle(
+            color: AppConstants.accentColor.withValues(alpha: 0.7),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: Text(
+              'Annuler',
+              style: TextStyle(
+                color: AppConstants.accentColor.withValues(alpha: 0.7),
+              ),
+            ),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(context, true),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppConstants.dangerColor,
+              foregroundColor: Colors.white,
+            ),
+            child: const Text('Supprimer'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm == true) {
+      StorageService.instance.removeEmergencyContact(contact.id);
+      setState(() {
+        _emergencyContacts = StorageService.instance.emergencyContacts;
+      });
+    }
+  }
+
+  Future<void> _sendTestSms(EmergencyContact contact) async {
+    NotificationService.showInfo('Envoi du SMS de test...');
+
+    final result = await SmsService.sendTestSms(contact.phoneNumber);
+
+    if (result.success) {
+      NotificationService.showSuccess(result.message);
+    } else {
+      NotificationService.showError(result.message);
+    }
+  }
+
   Future<void> _startScan() async {
     if (_isScanning) return;
 
@@ -108,6 +191,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
       _foundDevices = [];
     });
     _loadSystemDevices();
+
+    await FlutterBluePlus.startScan(timeout: const Duration(seconds: 10));
+
     await _scanSub?.cancel();
     _scanSub = FlutterBluePlus.scanResults.listen((results) {
       final map = <String, ScanResult>{};
@@ -119,26 +205,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
       if (mounted) setState(() => _foundDevices = map.values.toList());
     });
 
-    try {
-      await FlutterBluePlus.startScan(timeout: const Duration(seconds: 20));
-    } catch (e) {
-      await _scanSub?.cancel();
-      if (mounted) {
-        setState(() => _isScanning = false);
-        NotificationService.showError('Scan impossible : $e');
-      }
-      return;
-    }
+    await FlutterBluePlus.startScan(timeout: const Duration(seconds: 10));
 
-    // Skip the initial false emission and wait for the scan to actually stop.
-    FlutterBluePlus.isScanning
-        .skipWhile((v) => v == false)
-        .where((v) => v == false)
-        .first
-        .then((_) {
-          _scanSub?.cancel();
-          if (mounted) setState(() => _isScanning = false);
-        });
+    FlutterBluePlus.isScanning.where((v) => v == false).first.then((_) {
+      _scanSub?.cancel();
+      if (mounted) setState(() => _isScanning = false);
+    });
   }
 
   Future<void> _connectToDevice(BluetoothDevice device) async {
@@ -263,6 +335,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
           _buildSectionHeader('Sécurité'),
           const SizedBox(height: 8),
           _buildEmergencyTile(),
+          const SizedBox(height: 12),
+          _buildEmergencyContactsSection(),
           const SizedBox(height: 20),
           _buildSectionHeader('Caméra — Capture'),
           const SizedBox(height: 8),
@@ -364,6 +438,139 @@ class _SettingsScreenState extends State<SettingsScreen> {
             ),
           ]),
           const SizedBox(height: 20),
+        ],
+      ),
+    );
+  }
+
+
+  Widget _buildEmergencyContactsSection() {
+    return AppCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+            child: Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: AppConstants.dangerColor.withValues(alpha: 0.12),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: const Icon(
+                    Icons.contacts,
+                    color: AppConstants.dangerColor,
+                    size: 22,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        'Contacts d\'urgence',
+                        style: TextStyle(
+                          color: AppConstants.accentColor,
+                          fontSize: 15,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      Text(
+                        'Recevront un SMS avec votre position',
+                        style: TextStyle(
+                          color: AppConstants.accentColor.withValues(alpha: 0.5),
+                          fontSize: 12,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                IconButton(
+                  onPressed: _addEmergencyContact,
+                  icon: const Icon(Icons.add_circle),
+                  color: AppConstants.accentColor,
+                  tooltip: 'Ajouter un contact',
+                ),
+              ],
+            ),
+          ),
+          if (_emergencyContacts.isEmpty)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+              child: Text(
+                'Aucun contact enregistré',
+                style: TextStyle(
+                  color: AppConstants.accentColor.withValues(alpha: 0.4),
+                  fontSize: 13,
+                  fontStyle: FontStyle.italic,
+                ),
+              ),
+            )
+          else
+            ...List.generate(_emergencyContacts.length, (index) {
+              final contact = _emergencyContacts[index];
+              final isLast = index == _emergencyContacts.length - 1;
+              return Column(
+                children: [
+                  Divider(
+                    height: 1,
+                    indent: 16,
+                    endIndent: 16,
+                    color: AppConstants.borderColor,
+                  ),
+                  ListTile(
+                    dense: true,
+                    leading: CircleAvatar(
+                      radius: 18,
+                      backgroundColor: AppConstants.accentColor.withValues(alpha: 0.1),
+                      child: Text(
+                        contact.name[0].toUpperCase(),
+                        style: const TextStyle(
+                          color: AppConstants.accentColor,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ),
+                    title: Text(
+                      contact.name,
+                      style: const TextStyle(
+                        color: AppConstants.accentColor,
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    subtitle: Text(
+                      contact.phoneNumber,
+                      style: TextStyle(
+                        color: AppConstants.accentColor.withValues(alpha: 0.5),
+                        fontSize: 12,
+                      ),
+                    ),
+                    trailing: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        IconButton(
+                          onPressed: () => _sendTestSms(contact),
+                          icon: const Icon(Icons.send, size: 18),
+                          color: AppConstants.successColor,
+                          tooltip: 'Envoyer SMS test',
+                        ),
+                        IconButton(
+                          onPressed: () => _removeEmergencyContact(contact),
+                          icon: const Icon(Icons.delete_outline, size: 18),
+                          color: AppConstants.dangerColor,
+                          tooltip: 'Supprimer',
+                        ),
+                      ],
+                    ),
+                  ),
+                  if (isLast) const SizedBox(height: 8),
+                ],
+              );
+            }),
         ],
       ),
     );
@@ -1256,6 +1463,121 @@ class _SettingsScreenState extends State<SettingsScreen> {
           ],
         ],
       ),
+    );
+  }
+}
+
+class _AddContactDialog extends StatefulWidget {
+  @override
+  State<_AddContactDialog> createState() => _AddContactDialogState();
+}
+
+class _AddContactDialogState extends State<_AddContactDialog> {
+  final _nameController = TextEditingController();
+  final _phoneController = TextEditingController();
+
+  @override
+  void dispose() {
+    _nameController.dispose();
+    _phoneController.dispose();
+    super.dispose();
+  }
+
+  void _submit() {
+    final name = _nameController.text.trim();
+    final phone = _phoneController.text.trim();
+
+    if (name.isEmpty || phone.isEmpty) {
+      return;
+    }
+
+    final contact = EmergencyContact.create(
+      name: name,
+      phoneNumber: phone,
+    );
+
+    Navigator.pop(context, contact);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      backgroundColor: AppConstants.surfaceColor,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(AppConstants.defaultRadius),
+      ),
+      title: const Text(
+        'Ajouter un contact',
+        style: TextStyle(
+          color: AppConstants.accentColor,
+          fontSize: 16,
+          fontWeight: FontWeight.w700,
+        ),
+      ),
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          TextField(
+            controller: _nameController,
+            autofocus: true,
+            style: const TextStyle(color: Color(0xFF1A1A1A), fontSize: 16),
+            textCapitalization: TextCapitalization.words,
+            decoration: InputDecoration(
+              labelText: 'Nom',
+              hintText: 'Ex: Maman, Papa, Ami...',
+              hintStyle: TextStyle(color: Colors.grey.shade400),
+              filled: true,
+              fillColor: AppConstants.surfaceColor,
+              prefixIcon: const Icon(
+                Icons.person,
+                color: AppConstants.accentColor,
+                size: 20,
+              ),
+            ),
+          ),
+          const SizedBox(height: 16),
+          TextField(
+            controller: _phoneController,
+            style: const TextStyle(color: Color(0xFF1A1A1A), fontSize: 16),
+            keyboardType: TextInputType.phone,
+            decoration: InputDecoration(
+              labelText: 'Numéro de téléphone',
+              hintText: 'Ex: 0612345678',
+              hintStyle: TextStyle(color: Colors.grey.shade400),
+              filled: true,
+              fillColor: AppConstants.surfaceColor,
+              prefixIcon: const Icon(
+                Icons.phone,
+                color: AppConstants.accentColor,
+                size: 20,
+              ),
+            ),
+          ),
+        ],
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: Text(
+            'Annuler',
+            style: TextStyle(
+              color: AppConstants.accentColor.withValues(alpha: 0.7),
+            ),
+          ),
+        ),
+        ElevatedButton(
+          onPressed: _submit,
+          style: ElevatedButton.styleFrom(
+            backgroundColor: AppConstants.accentColor,
+            foregroundColor: Colors.white,
+            elevation: 0,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(AppConstants.smallRadius),
+            ),
+          ),
+          child: const Text('Ajouter'),
+        ),
+      ],
     );
   }
 }
