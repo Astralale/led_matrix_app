@@ -214,6 +214,7 @@ class BleService {
 
       StorageService.instance.lastDeviceId = device.remoteId.toString();
       NotificationService.showSuccess('LED panel connected');
+      _log('Connecté à ${device.platformName} (${device.remoteId})');
 
       await _connSub?.cancel();
       _connSub = device.connectionState.listen((state) {
@@ -326,6 +327,17 @@ class BleService {
               throw TimeoutException('BLE operation timeout');
             },
           );
+        } on TimeoutException catch (e) {
+          _log('Send queue error: $e');
+          _sendQueue.clear();
+          _characteristic = null;
+          _lastSentPixels = null;
+          if (!_userDisconnected && _device != null) {
+            _setState(BleConnectionState.disconnected);
+            NotificationService.showWarning('Connexion BLE perdue');
+            _attemptReconnect();
+          }
+          break;
         } catch (e) {
           _log('Send queue error: $e');
         }

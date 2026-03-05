@@ -94,7 +94,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   Future<void> _loadSystemDevices() async {
     final devices = await FlutterBluePlus.systemDevices(const []);
-    if (mounted) setState(() => _systemDevices = devices);
+    final filtered = devices
+        .where((d) => d.platformName == BleService.deviceName)
+        .toList();
+    if (mounted) setState(() => _systemDevices = filtered);
   }
 
   @override
