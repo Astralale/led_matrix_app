@@ -17,6 +17,7 @@ class BleService {
 
   static const String _serviceUuid = '4fafc201-1fb5-459e-8fcc-c5c9c331914b';
   static const String _charUuid = 'beb5483e-36e1-4688-b7f5-ea07361b26a8';
+  static const String _alertCharUuid = 'beb5483e-36e1-4688-b7f5-ea07361b26a9';
   static const String _deviceName = 'LED_MATRIX';
 
   static const int _frameSize = 512;
@@ -31,11 +32,15 @@ class BleService {
   int _reconnectAttempts = 0;
   bool _userDisconnected = false;
 
+  Function()? onAlertReceived;
+  StreamSubscription? _alertSub;
+
   final Queue<Future<void> Function()> _sendQueue = Queue();
   bool _processing = false;
 
   BluetoothDevice? _device;
   BluetoothCharacteristic? _characteristic;
+  BluetoothCharacteristic? _alertCharacteristic;
   StreamSubscription? _connSub;
   bool _connecting = false;
   bool _reconnecting = false;
@@ -44,7 +49,7 @@ class BleService {
   List<List<int>>? _nextMatrix;
 
   final StreamController<BleConnectionState> _stateCtrl =
-      StreamController<BleConnectionState>.broadcast();
+  StreamController<BleConnectionState>.broadcast();
 
   BleConnectionState _state = BleConnectionState.disconnected;
 
@@ -99,6 +104,7 @@ class BleService {
     } on Exception catch (_) {
       await FlutterBluePlus.stopScan();
       _characteristic = null;
+      _alertCharacteristic = null;
       _device = null;
       _setState(BleConnectionState.error);
       NotificationService.showError('Connexion échouée');
@@ -153,51 +159,69 @@ class BleService {
       );
 
       await device.connectionState.firstWhere(
-        (s) => s == BluetoothConnectionState.connected,
+            (s) => s == BluetoothConnectionState.connected,
       );
 
-      // Android only
       if (Platform.isAndroid) {
         try {
           await device.requestMtu(256);
         } catch (_) {}
       }
+
       await Future<void>.delayed(
         Platform.isAndroid
             ? const Duration(milliseconds: 100)
             : const Duration(milliseconds: 800),
       );
+
       final services = await device.discoverServices();
 
       BluetoothCharacteristic? char;
+      BluetoothCharacteristic? alertChar;
+
       for (final svc in services) {
-        if (svc.uuid.toString().toLowerCase() == _serviceUuid) {
+        final svcUuid = svc.uuid.toString().toLowerCase();
+
+        if (svcUuid == _serviceUuid) {
           for (final c in svc.characteristics) {
-            if (c.uuid.toString().toLowerCase() == _charUuid) {
+            final charUuid = c.uuid.toString().toLowerCase();
+
+            if (charUuid == _charUuid) {
               char = c;
-              break;
+            }
+
+            if (charUuid == _alertCharUuid) {
+              alertChar = c;
             }
           }
         }
       }
 
       if (char == null) {
-        throw Exception('BLE characteristic "$_charUuid" not found');
+        throw Exception('BLE characteristic not found');
       }
 
       _characteristic = char;
+      _alertCharacteristic = alertChar;
+
+      if (alertChar != null) {
+        await _subscribeToAlerts(alertChar);
+      }
+
       _reconnectAttempts = 0;
       _lastSentPixels = null;
       _setState(BleConnectionState.connected);
 
       StorageService.instance.lastDeviceId = device.remoteId.toString();
       NotificationService.showSuccess('LED panel connected');
-      _log('Connecté à ${device.platformName} (${device.remoteId})');
 
       await _connSub?.cancel();
       _connSub = device.connectionState.listen((state) {
         if (state == BluetoothConnectionState.disconnected) {
           _characteristic = null;
+          _alertCharacteristic = null;
+          _alertSub?.cancel();
+          _alertSub = null;
           _lastSentPixels = null;
           _nextMatrix = null;
 
@@ -207,12 +231,27 @@ class BleService {
           } else {
             _setState(BleConnectionState.disconnected);
             NotificationService.showWarning('Connexion BLE perdue');
-            _attemptReconnect(); // protégé par _reconnecting
+            _attemptReconnect();
           }
         }
       });
     } finally {
       _connecting = false;
+    }
+  }
+
+  Future<void> _subscribeToAlerts(BluetoothCharacteristic alertChar) async {
+    try {
+      await _alertSub?.cancel();
+      await alertChar.setNotifyValue(true);
+
+      _alertSub = alertChar.lastValueStream.listen((value) {
+        if (value.length >= 2 && value[0] == 0xCC && value[1] == 0xAA) {
+          onAlertReceived?.call();
+        }
+      });
+    } catch (e) {
+      _log('Error subscribing to alerts: $e');
     }
   }
 
@@ -230,9 +269,6 @@ class BleService {
         _reconnectAttempts++;
         final delay = _baseReconnectDelay * _reconnectAttempts;
 
-        _log(
-          'Reconnection attempt $_reconnectAttempts/$_maxReconnectAttempts in ${delay.inSeconds}s...',
-        );
         NotificationService.showWarning(
           'Reconnexion $_reconnectAttempts/$_maxReconnectAttempts...',
         );
@@ -263,10 +299,13 @@ class BleService {
     _userDisconnected = true;
     _connSub?.cancel();
     _connSub = null;
+    _alertSub?.cancel();
+    _alertSub = null;
     _lastSentPixels = null;
     _nextMatrix = null;
     await _device?.disconnect();
     _characteristic = null;
+    _alertCharacteristic = null;
     _device = null;
     _setState(BleConnectionState.disconnected);
     NotificationService.showInfo('Disconnected from LED panel');
@@ -284,7 +323,6 @@ class BleService {
           await next().timeout(
             const Duration(seconds: 5),
             onTimeout: () {
-              _log('BLE operation timeout');
               throw TimeoutException('BLE operation timeout');
             },
           );
@@ -299,7 +337,6 @@ class BleService {
 
   Future<void> sendMatrix(List<List<int>> pixels) async {
     if (!isConnected || _characteristic == null) {
-      _log('Not connected, send ignored');
       return;
     }
 
@@ -367,12 +404,12 @@ class BleService {
       frame[1] = _headerBrightness2;
       frame[2] = brightness.clamp(0, 255);
       await char.write(frame.toList(), withoutResponse: false);
-      _log('Brightness sent: $brightness');
     });
   }
 
   void dispose() {
     _connSub?.cancel();
+    _alertSub?.cancel();
     _stateCtrl.close();
   }
 }
