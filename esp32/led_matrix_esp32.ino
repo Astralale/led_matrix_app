@@ -7,7 +7,7 @@
 #define PIN_TOP 16
 #define PIN_BOT 18
 #define NUM_LEDS 256
-#define PIN_BUTTON 16
+#define PIN_BUTTON 15
 
 #define WIDTH 32
 #define HEIGHT 16
