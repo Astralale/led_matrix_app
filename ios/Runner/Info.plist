@@ -7,7 +7,7 @@
 	<key>CFBundleDevelopmentRegion</key>
 	<string>$(DEVELOPMENT_LANGUAGE)</string>
 	<key>CFBundleDisplayName</key>
-	<string>Led Matrix App</string>
+	<string>StaySeen</string>
 	<key>CFBundleExecutable</key>
 	<string>$(EXECUTABLE_NAME)</string>
 	<key>CFBundleIdentifier</key>
@@ -36,13 +36,13 @@
 	<key>NSBluetoothPeripheralUsageDescription</key>
 	<string>Bluetooth requis pour se connecter à la matrice LED.</string>
 	<key>NSCameraUsageDescription</key>
-	<string>Veuillez autoriser l'application à acceder a la caméra</string>
+	<string>Veuillez autoriser l&apos;application à acceder a la caméra</string>
 	<key>NSLocalNetworkUsageDescription</key>
 	<string>Accès au réseau local pour se connecter à l’ESP32-CAM.</string>
 	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
-	<string>Autoriser l'application à acceder a la localisation du telephone</string>
+	<string>Autoriser l&apos;application à acceder a la localisation du telephone</string>
 	<key>NSLocationWhenInUseUsageDescription</key>
-	<string>Autoriser l'application a acceder a la localisation du telephone en cours d'utilisation</string>
+	<string>Autoriser l&apos;application a acceder a la localisation du telephone en cours d&apos;utilisation</string>
 	<key>NSPhotoLibraryAddUsageDescription</key>
 	<string>Enregistrer des vidéos dans la galerie.</string>
 	<key>NSPhotoLibraryUsageDescription</key>
