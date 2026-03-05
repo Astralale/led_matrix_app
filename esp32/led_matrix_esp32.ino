@@ -4,8 +4,8 @@
 #include <BLEUtils.h>
 #include <BLE2902.h>
 
-#define PIN_TOP 18
-#define PIN_BOT 19
+#define PIN_TOP 16
+#define PIN_BOT 18
 #define NUM_LEDS 256
 #define PIN_BUTTON 16
 
