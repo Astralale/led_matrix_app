@@ -446,7 +446,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
-
   Widget _buildEmergencyContactsSection() {
     return AppCard(
       child: Column(
@@ -484,7 +483,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       Text(
                         'Recevront un SMS avec votre position',
                         style: TextStyle(
-                          color: AppConstants.accentColor.withValues(alpha: 0.5),
+                          color: AppConstants.accentColor.withValues(
+                            alpha: 0.5,
+                          ),
                           fontSize: 12,
                         ),
                       ),
@@ -528,7 +529,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     dense: true,
                     leading: CircleAvatar(
                       radius: 18,
-                      backgroundColor: AppConstants.accentColor.withValues(alpha: 0.1),
+                      backgroundColor: AppConstants.accentColor.withValues(
+                        alpha: 0.1,
+                      ),
                       child: Text(
                         contact.name[0].toUpperCase(),
                         style: const TextStyle(
@@ -1478,17 +1481,20 @@ class _AddContactDialog extends StatefulWidget {
 class _AddContactDialogState extends State<_AddContactDialog> {
   final _nameController = TextEditingController();
   final _phoneController = TextEditingController();
+  final _mailAddressController = TextEditingController();
 
   @override
   void dispose() {
     _nameController.dispose();
     _phoneController.dispose();
+    _mailAddressController.dispose();
     super.dispose();
   }
 
   void _submit() {
     final name = _nameController.text.trim();
     final phone = _phoneController.text.trim();
+    final mailAddress = _mailAddressController.text.trim();
 
     if (name.isEmpty || phone.isEmpty) {
       return;
@@ -1497,6 +1503,7 @@ class _AddContactDialogState extends State<_AddContactDialog> {
     final contact = EmergencyContact.create(
       name: name,
       phoneNumber: phone,
+      mailAddress: mailAddress,
     );
 
     Navigator.pop(context, contact);
@@ -1533,6 +1540,25 @@ class _AddContactDialogState extends State<_AddContactDialog> {
               fillColor: AppConstants.surfaceColor,
               prefixIcon: const Icon(
                 Icons.person,
+                color: AppConstants.accentColor,
+                size: 20,
+              ),
+            ),
+          ),
+          const SizedBox(height: 16),
+          TextField(
+            controller: _mailAddressController,
+            autofocus: true,
+            style: const TextStyle(color: Color(0xFF1A1A1A), fontSize: 16),
+            textCapitalization: TextCapitalization.words,
+            decoration: InputDecoration(
+              labelText: 'Mail',
+              hintText: 'Ex: jean.dupont@gmail.com',
+              hintStyle: TextStyle(color: Colors.grey.shade400),
+              filled: true,
+              fillColor: AppConstants.surfaceColor,
+              prefixIcon: const Icon(
+                Icons.mail,
                 color: AppConstants.accentColor,
                 size: 20,
               ),

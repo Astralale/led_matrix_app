@@ -1,10 +1,12 @@
-import 'package:flutter/material.dart';
 import 'dart:io';
 
+import 'package:flutter/material.dart';
+import 'package:led_matrix_app/services/mail_service.dart';
+
 import 'app.dart';
-import 'services/storage_service.dart';
-import 'services/sms_service.dart';
 import 'services/ble_service.dart';
+import 'services/sms_service.dart';
+import 'services/storage_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -18,12 +20,20 @@ void main() async {
   BleService.instance.onAlertReceived = () async {
     print('ALERTE BOUTON ESP32 REÇUE !');
 
-    final result = await SmsService.sendEmergencyAlert();
+    final resultMail = await MailService.sendMailAlert();
 
-    if (result.success) {
-      print('SMS envoyés: ${result.message}');
+    if (resultMail.success) {
+      print('Mail envoyés: ${resultMail.message}');
     } else {
-      print('Erreur SMS: ${result.message}');
+      print('Erreur Mail: ${resultMail.message}');
+    }
+
+    final resultSms = await SmsService.sendEmergencyAlert();
+
+    if (resultSms.success) {
+      print('SMS envoyés: ${resultSms.message}');
+    } else {
+      print('Erreur SMS: ${resultSms.message}');
     }
   };
 

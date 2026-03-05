@@ -31,6 +31,7 @@ dependencies:
   flutter:
     sdk: flutter
 
+  mailer: ^6.4.1
   http: ^0.13.6
   flutter_mjpeg: ^2.0.4
   cupertino_icons: ^1.0.8

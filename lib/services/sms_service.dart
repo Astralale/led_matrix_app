@@ -140,7 +140,7 @@ class SmsService {
       buffer.write('📍 Position GPS non disponible');
     }
 
-    buffer.write('\n\nMessage envoyé via SafeVest');
+    buffer.write('\n\nMessage envoyé via StaySeen');
 
     return buffer.toString();
   }
@@ -150,7 +150,7 @@ class SmsService {
     Position? position = await LocationService.getCurrentPosition();
 
     final buffer = StringBuffer();
-    buffer.write('🧪 TEST SafeVest\n\n');
+    buffer.write('🧪 TEST StaySeen\n\n');
 
     if (position != null) {
       buffer.write('📍 Position: ${LocationService.getGoogleMapsLink(position)}');
