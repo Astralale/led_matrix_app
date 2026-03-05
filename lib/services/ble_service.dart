@@ -15,9 +15,9 @@ class BleService {
 
   static final BleService instance = BleService._();
 
-  static const String _serviceUuid = '4fafc201-1fb5-459e-8fcc-c5c9c331914b';
+  static const String serviceUuid = '4fafc201-1fb5-459e-8fcc-c5c9c331914b';
   static const String _charUuid = 'beb5483e-36e1-4688-b7f5-ea07361b26a8';
-  static const String _deviceName = 'LED_MATRIX';
+  static const String deviceName = 'LED_MATRIX';
 
   static const int _frameSize = 512;
   static const int _chunkSize = 100;
@@ -79,7 +79,7 @@ class BleService {
 
       scanSub = FlutterBluePlus.scanResults.listen((results) {
         for (final r in results) {
-          if (r.device.platformName == _deviceName && !completer.isCompleted) {
+          if (r.device.platformName == deviceName && !completer.isCompleted) {
             completer.complete(r.device);
           }
         }
@@ -89,7 +89,7 @@ class BleService {
 
       final device = await completer.future.timeout(
         const Duration(seconds: 12),
-        onTimeout: () => throw Exception('Device "$_deviceName" not found'),
+        onTimeout: () => throw Exception('Device "$deviceName" not found'),
       );
 
       await FlutterBluePlus.stopScan();
@@ -171,7 +171,7 @@ class BleService {
 
       BluetoothCharacteristic? char;
       for (final svc in services) {
-        if (svc.uuid.toString().toLowerCase() == _serviceUuid) {
+        if (svc.uuid.toString().toLowerCase() == serviceUuid) {
           for (final c in svc.characteristics) {
             if (c.uuid.toString().toLowerCase() == _charUuid) {
               char = c;
@@ -191,7 +191,6 @@ class BleService {
       _setState(BleConnectionState.connected);
 
       StorageService.instance.lastDeviceId = device.remoteId.toString();
-      NotificationService.showSuccess('LED panel connected');
       _log('Connecté à ${device.platformName} (${device.remoteId})');
 
       await _connSub?.cancel();
@@ -288,6 +287,17 @@ class BleService {
               throw TimeoutException('BLE operation timeout');
             },
           );
+        } on TimeoutException catch (e) {
+          _log('Send queue error: $e');
+          _sendQueue.clear();
+          _characteristic = null;
+          _lastSentPixels = null;
+          if (!_userDisconnected && _device != null) {
+            _setState(BleConnectionState.disconnected);
+            NotificationService.showWarning('Connexion BLE perdue');
+            _attemptReconnect();
+          }
+          break;
         } catch (e) {
           _log('Send queue error: $e');
         }
@@ -318,11 +328,10 @@ class BleService {
     if (_processing) return;
 
     await _enqueue(() async {
-      while (_nextMatrix != null) {
-        final toSend = _nextMatrix!;
-        _nextMatrix = null;
-        await _doMatrixWrite(toSend);
-      }
+      if (_nextMatrix == null) return;
+      final toSend = _nextMatrix!;
+      _nextMatrix = null;
+      await _doMatrixWrite(toSend);
     });
   }
 
