@@ -28,12 +28,13 @@ void main() async {
       print('Erreur Mail: ${resultMail.message}');
     }
 
-    final resultSms = await SmsService.sendEmergencyAlert();
-
-    if (resultSms.success) {
-      print('SMS envoyés: ${resultSms.message}');
-    } else {
-      print('Erreur SMS: ${resultSms.message}');
+    if (Platform.isAndroid) {
+      final resultSms = await SmsService.sendEmergencyAlert();
+      if (resultSms.success) {
+        print('SMS envoyés: ${resultSms.message}');
+      } else {
+        print('Erreur SMS: ${resultSms.message}');
+      }
     }
   };
 
