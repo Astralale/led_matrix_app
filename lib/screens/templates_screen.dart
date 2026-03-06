@@ -1,9 +1,13 @@
+import 'dart:typed_data';
+
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
 
 import '../config/constants.dart';
 import '../data/matrix_templates.dart';
 import '../models/led_matrix.dart';
 import '../models/matrix_template.dart';
+import '../services/image_resizer.dart';
 import '../services/storage_service.dart';
 import '../widgets/ble_status_indicator.dart';
 import '../widgets/matrix_panel.dart';
@@ -18,6 +22,7 @@ class TemplatesScreen extends StatefulWidget {
 
 class _TemplatesScreenState extends State<TemplatesScreen> {
   List<Map<String, dynamic>> _savedDesigns = [];
+  final ImagePicker _imagePicker = ImagePicker();
 
   @override
   void initState() {
@@ -48,6 +53,60 @@ class _TemplatesScreenState extends State<TemplatesScreen> {
     );
   }
 
+  Future<void> _importImageAsTemplate() async {
+    final XFile? picked = await _imagePicker.pickImage(
+      source: ImageSource.gallery,
+    );
+
+    if (picked == null) return;
+
+    final Uint8List bytes = await picked.readAsBytes();
+    final List<List<int>> matrix = await ImageResizer.imageToMatrix(bytes);
+
+    if (!mounted) return;
+
+    final TextEditingController nameController = TextEditingController(
+      text: 'Image importée',
+    );
+
+    final String? name = await showDialog<String>(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text('Nom du template'),
+          content: TextField(
+            controller: nameController,
+            decoration: const InputDecoration(
+              hintText: 'Ex: Logo, Photo, Icône...',
+            ),
+            autofocus: true,
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Annuler'),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                final value = nameController.text.trim();
+                Navigator.pop(
+                  context,
+                  value.isEmpty ? 'Image importée' : value,
+                );
+              },
+              child: const Text('Enregistrer'),
+            ),
+          ],
+        );
+      },
+    );
+
+    if (name == null) return;
+
+    StorageService.instance.saveDesign(name, matrix);
+    _loadSavedDesigns();
+  }
+
   @override
   Widget build(BuildContext context) {
     final savedTemplates = List.generate(
@@ -75,8 +134,16 @@ class _TemplatesScreenState extends State<TemplatesScreen> {
             letterSpacing: 0.5,
           ),
         ),
-        actions: const [
-          Padding(
+        actions: [
+          IconButton(
+            onPressed: _importImageAsTemplate,
+            icon: const Icon(
+              Icons.add_photo_alternate_outlined,
+              color: AppConstants.accentColor,
+            ),
+            tooltip: 'Importer une image',
+          ),
+          const Padding(
             padding: EdgeInsets.only(right: 8),
             child: BleStatusIndicator(),
           ),
