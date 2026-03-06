@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+
 import 'config/constants.dart';
 import 'screens/home_screen.dart';
 import 'services/notification_service.dart';
@@ -18,9 +19,7 @@ class LedMatrixApp extends StatelessWidget {
           seedColor: AppConstants.accentColor,
           brightness: Brightness.light,
         ),
-
         scaffoldBackgroundColor: AppConstants.backgroundColor,
-
         appBarTheme: const AppBarTheme(
           backgroundColor: AppConstants.backgroundColor,
           foregroundColor: AppConstants.accentColor,

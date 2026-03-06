@@ -1,10 +1,12 @@
 import 'dart:convert';
 
 import 'package:shared_preferences/shared_preferences.dart';
+
 import '../models/emergency_contact.dart';
 
 class StorageService {
   StorageService._();
+
   static final StorageService instance = StorageService._();
 
   static const String _keyEmergencyMessage = 'emergency_message';
@@ -14,7 +16,7 @@ class StorageService {
   static const String _keySelectedColorIndex = 'selected_color_index';
   static const String _keyLastDeviceId = 'last_ble_device_id';
   static const String _keySavedDesigns = 'saved_designs';
-  static const String _keyEmergencyContacts = 'emergency_contacts';  // NOUVEAU
+  static const String _keyEmergencyContacts = 'emergency_contacts'; // NOUVEAU
 
   late SharedPreferences _prefs;
 
@@ -67,7 +69,7 @@ class StorageService {
 
   void saveDesign(String name, List<List<int>> pixels) {
     final designs = savedDesigns;
-    designs.add({
+    designs.insert(0, {
       'name': name,
       'pixels': pixels,
       'date': DateTime.now().toIso8601String(),
@@ -92,9 +94,7 @@ class StorageService {
     if (json == null || json.isEmpty) return [];
 
     List<dynamic> jsonList = jsonDecode(json);
-    return jsonList
-        .map((item) => EmergencyContact.fromJson(item))
-        .toList();
+    return jsonList.map((item) => EmergencyContact.fromJson(item)).toList();
   }
 
   set emergencyContacts(List<EmergencyContact> contacts) {

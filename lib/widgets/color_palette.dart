@@ -5,7 +5,7 @@ import '../config/constants.dart';
 class HorizontalColorPalette extends StatelessWidget {
   final int selectedColorIndex;
   final ValueChanged<int> onColorSelected;
-  final List<int>? availableColors; // Si null, toutes les couleurs
+  final List<int>? availableColors;
   final double itemSize;
 
   const HorizontalColorPalette({
@@ -50,8 +50,6 @@ class HorizontalColorPalette extends StatelessWidget {
                         BoxShadow(
                           color: AppConstants.colorPalette[colorIndex]
                               .withValues(alpha: 0.7),
-                          blurRadius: 10,
-                          spreadRadius: 2,
                         ),
                       ]
                     : null,

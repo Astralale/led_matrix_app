@@ -27,23 +27,79 @@ struct RGB {
     uint8_t r, g, b;
 };
 
-const RGB PALETTE[16] = {
-        { 0, 0, 0 },       // 0  - Eteint
-        { 255, 0, 0 },     // 1  - Rouge
-        { 0, 255, 0 },     // 2  - Vert
-        { 0, 0, 255 },     // 3  - Bleu
-        { 255, 255, 0 },   // 4  - Jaune
-        { 255, 0, 255 },   // 5  - Magenta
-        { 0, 255, 255 },   // 6  - Cyan
-        { 255, 255, 255 }, // 7  - Blanc
-        { 255, 136, 0 },   // 8  - Orange
-        { 136, 0, 255 },   // 9  - Violet
-        { 255, 20, 147 },  // 10 - Rose
-        { 255, 68, 0 },    // 11 - Rouge-orange
-        { 128, 255, 0 },   // 12 - Vert lime
-        { 0, 170, 255 },   // 13 - Bleu ciel
-        { 255, 215, 0 },   // 14 - Or
-        { 0, 255, 176 },   // 15 - Turquoise
+const RGB PALETTE[64] = {
+        {0,   0,   0},       // 0
+
+        {255, 0,   0},     // 1
+        {255, 23,  68},   // 2
+        {213, 0,   0},     // 3
+        {255, 82,  82},   // 4
+        {255, 64,  129},  // 5
+        {245, 0,   87},    // 6
+        {197, 17,  98},   // 7
+
+        {255, 109, 0},   // 8
+        {255, 143, 0},   // 9
+        {255, 160, 0},   // 10
+        {255, 193, 7},   // 11
+        {255, 215, 64},  // 12
+        {255, 234, 0},   // 13
+        {255, 255, 0},   // 14
+        {255, 241, 118}, // 15
+
+        {178, 255, 89},  // 16
+        {118, 255, 3},   // 17
+        {100, 221, 23},  // 18
+        {0,   230, 118},   // 19
+        {0,   200, 83},    // 20
+        {0,   255, 0},     // 21
+        {105, 240, 174}, // 22
+        {0,   255, 176},   // 23
+
+        {0,   255, 255},   // 24
+        {24,  255, 255},  // 25
+        {0,   229, 255},   // 26
+        {0,   184, 212},   // 27
+        {0,   172, 193},   // 28
+        {38,  198, 218},  // 29
+        {77,  208, 225},  // 30
+        {128, 222, 234}, // 31
+
+        {64,  196, 255},  // 32
+        {0,   176, 255},   // 33
+        {0,   145, 234},   // 34
+        {33,  150, 243},  // 35
+        {30,  136, 229},  // 36
+        {25,  118, 210},  // 37
+        {41,  98,  255},   // 38
+        {0,   0,   255},     // 39
+
+        {124, 77,  255},  // 40
+        {101, 31,  255},  // 41
+        {98,  0,   234},    // 42
+        {123, 31,  162},  // 43
+        {142, 36,  170},  // 44
+        {156, 39,  176},  // 45
+        {170, 0,   255},   // 46
+        {136, 0,   255},   // 47
+
+        {255, 255, 255}, // 48
+        {245, 245, 245}, // 49
+        {238, 238, 238}, // 50
+        {224, 224, 224}, // 51
+        {189, 189, 189}, // 52
+        {158, 158, 158}, // 53
+        {117, 117, 117}, // 54
+        {66,  66,  66},    // 55
+
+        {255, 215, 0},   // 56
+        {255, 192, 203}, // 57
+        {173, 255, 47},  // 58
+        {127, 255, 212}, // 59
+        {135, 206, 235}, // 60
+        {186, 85,  211},  // 61
+        {255, 127, 80},  // 62
+        {165, 42,  42},   // 63
 };
 
 uint8_t matrix[HEIGHT][WIDTH] = {0};
@@ -52,21 +108,21 @@ uint8_t rxBuffer[600];
 int rxIndex = 0;
 bool newMatrixReady = false;
 
-BLEServer* pServer = nullptr;
-BLECharacteristic* pCharacteristic = nullptr;
-BLECharacteristic* pAlertCharacteristic = nullptr;
+BLEServer *pServer = nullptr;
+BLECharacteristic *pCharacteristic = nullptr;
+BLECharacteristic *pAlertCharacteristic = nullptr;
 bool deviceConnected = false;
 
 unsigned long lastButtonPress = 0;
 const unsigned long debounceDelay = 500;
 
 class ServerCallbacks : public BLEServerCallbacks {
-    void onConnect(BLEServer* pServer) {
+    void onConnect(BLEServer *pServer) {
         deviceConnected = true;
         Serial.println("Client connecte");
     }
 
-    void onDisconnect(BLEServer* pServer) {
+    void onDisconnect(BLEServer *pServer) {
         deviceConnected = false;
         Serial.println("Client deconnecte");
         rxIndex = 0;
@@ -74,7 +130,7 @@ class ServerCallbacks : public BLEServerCallbacks {
 };
 
 class CharacteristicCallbacks : public BLECharacteristicCallbacks {
-    void onWrite(BLECharacteristic* pCharacteristic) {
+    void onWrite(BLECharacteristic *pCharacteristic) {
         String value = pCharacteristic->getValue();
         int len = value.length();
         Serial.print("Chunk recu: ");
@@ -84,7 +140,7 @@ class CharacteristicCallbacks : public BLECharacteristicCallbacks {
 
         for (int i = 0; i < len; i++) {
             if (rxIndex < 600) {
-                rxBuffer[rxIndex++] = (uint8_t)value[i];
+                rxBuffer[rxIndex++] = (uint8_t) value[i];
             }
         }
 
@@ -98,13 +154,12 @@ class CharacteristicCallbacks : public BLECharacteristicCallbacks {
             for (int y = 0; y < HEIGHT; y++) {
                 for (int x = 0; x < WIDTH; x++) {
                     matrix[y][x] = rxBuffer[2 + y * WIDTH + x];
-                    if (matrix[y][x] > 15) matrix[y][x] = 0;
+                    if (matrix[y][x] > 63) matrix[y][x] = 0;
                 }
             }
             newMatrixReady = true;
             rxIndex = 0;
-        }
-        else if (rxBuffer[0] == 0xBB && rxBuffer[1] == 0x55 && rxIndex >= 3) {
+        } else if (rxBuffer[0] == 0xBB && rxBuffer[1] == 0x55 && rxIndex >= 3) {
             brightness = rxBuffer[2];
             stripTop.setBrightness(brightness);
             stripBot.setBrightness(brightness);
@@ -144,7 +199,7 @@ void displayMatrix() {
         for (int x = 0; x < WIDTH; x++) {
             uint8_t colorIndex = matrix[y][x];
             if (colorIndex == 0) continue;
-            if (colorIndex > 15) colorIndex = 0;
+            if (colorIndex > 63) colorIndex = 0;
 
             RGB c = PALETTE[colorIndex];
 
@@ -239,7 +294,7 @@ void setup() {
     pServer = BLEDevice::createServer();
     pServer->setCallbacks(new ServerCallbacks());
 
-    BLEService* pService = pServer->createService(BLEUUID(SERVICE_UUID), 30);
+    BLEService *pService = pServer->createService(BLEUUID(SERVICE_UUID), 30);
 
     pCharacteristic = pService->createCharacteristic(
             CHARACTERISTIC_UUID,
@@ -256,7 +311,7 @@ void setup() {
 
     pService->start();
 
-    BLEAdvertising* pAdvertising = BLEDevice::getAdvertising();
+    BLEAdvertising *pAdvertising = BLEDevice::getAdvertising();
     pAdvertising->addServiceUUID(SERVICE_UUID);
     pAdvertising->setScanResponse(true);
     pAdvertising->setMinPreferred(0x06);
