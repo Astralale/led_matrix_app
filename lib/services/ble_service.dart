@@ -49,7 +49,7 @@ class BleService {
   List<List<int>>? _nextMatrix;
 
   final StreamController<BleConnectionState> _stateCtrl =
-  StreamController<BleConnectionState>.broadcast();
+      StreamController<BleConnectionState>.broadcast();
 
   BleConnectionState _state = BleConnectionState.disconnected;
 
@@ -159,14 +159,12 @@ class BleService {
       );
 
       await device.connectionState.firstWhere(
-            (s) => s == BluetoothConnectionState.connected,
+        (s) => s == BluetoothConnectionState.connected,
       );
 
-      if (Platform.isAndroid) {
-        try {
-          await device.requestMtu(256);
-        } catch (_) {}
-      }
+      try {
+        await device.requestMtu(256);
+      } catch (_) {}
 
       await Future<void>.delayed(
         Platform.isAndroid
@@ -380,13 +378,9 @@ class BleService {
 
     int offset = 0;
     while (offset < frame.length) {
-      final iosChunk = 180;
-      final effectiveChunk = Platform.isAndroid ? _chunkSize : iosChunk;
+      final effectiveChunk = Platform.isIOS ? 180 : _chunkSize;
       final end = (offset + effectiveChunk).clamp(0, frame.length);
-      await char.write(
-        frame.sublist(offset, end),
-        withoutResponse: Platform.isAndroid,
-      );
+      await char.write(frame.sublist(offset, end), withoutResponse: true);
       offset = end;
     }
 
