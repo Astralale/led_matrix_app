@@ -1,8 +1,8 @@
 PODS:
-  - ffmpeg_kit_flutter_new (1.0.0):
-    - ffmpeg_kit_flutter_new/full-gpl (= 1.0.0)
+  - ffmpeg_kit_flutter_new (1.0.3):
+    - ffmpeg_kit_flutter_new/full-gpl (= 1.0.3)
     - Flutter
-  - ffmpeg_kit_flutter_new/full-gpl (1.0.0):
+  - ffmpeg_kit_flutter_new/full-gpl (1.0.3):
     - Flutter
   - Flutter (1.0.0)
   - flutter_blue_plus_darwin (0.0.2):
@@ -62,7 +62,7 @@ EXTERNAL SOURCES:
     :path: ".symlinks/plugins/url_launcher_ios/ios"
 
 SPEC CHECKSUMS:
-  ffmpeg_kit_flutter_new: 57e1119b327bb2e13a091e0d73576739fb9f22f5
+  ffmpeg_kit_flutter_new: a3374da30c7a14022c1c5a23d8975bba6bc3fdc1
   Flutter: cabc95a1d2626b1b06e7179b784ebcf0c0cde467
   flutter_blue_plus_darwin: 904ed52825285a15f60e9d90312337a09f11a785
   geolocator_apple: 66b711889fd333205763b83c9dcf0a57a28c7afd
