@@ -61,7 +61,14 @@ class _TemplatesScreenState extends State<TemplatesScreen> {
     if (picked == null) return;
 
     final Uint8List bytes = await picked.readAsBytes();
-    final List<List<int>> matrix = await ImageResizer.imageToMatrix(bytes);
+    final List<List<int>> matrix = await ImageResizer.imageToMatrix(
+      bytes,
+      fit: MatrixImageFit.cover,
+      turnNearBlackToOff: false,
+      darkThreshold: 8,
+      contrast: 1.18,
+      saturation: 1.20,
+    );
 
     if (!mounted) return;
 
